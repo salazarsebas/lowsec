@@ -94,3 +94,4 @@ footer { margin-top:16px; }
 .deposit .amt { width:70px; } .feed li.contract { color: var(--green); }
 .signal { background:#0a0f18; border:1px solid var(--line); border-radius:8px; padding:8px; margin:8px 0; } .amber { color: var(--amber); font-weight:700; }
 .chart .clipped { font-size:9px; font-weight:700; }
+.council-entry.rejected { opacity:.55; }
