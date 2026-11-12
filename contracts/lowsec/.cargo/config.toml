@@ -1,0 +1,4 @@
+# Box has OpenSSL headers but no pkg-config; point openssl-sys (used by near-workspaces) at them.
+[env]
+OPENSSL_LIB_DIR = "/usr/lib/x86_64-linux-gnu"
+OPENSSL_INCLUDE_DIR = "/usr/include"
