@@ -9,7 +9,7 @@ import { goalStock, revertStock, ambushChanceBps, ambushSplit, askPrice, bidPric
 import { councilDecide, councilSignalBps, inflationBps, perCapitaInflationBps, type CouncilDecision } from "./council.js";
 import { emptyPeriod, gini, type PeriodMetrics } from "./metrics.js";
 
-export type AgentKind = "safe" | "risky" | "raider" | "ai_hauler";
+export type AgentKind = "safe" | "risky" | "raider" | "ai_hauler" | "market_maker";
 
 export interface Haul {
   from: Town;
@@ -28,6 +28,8 @@ export interface Agent {
   inventory: Record<Good, number>;
   haul: Haul | null;
   busyUntil: number;
+  /** turn offset so agents with the same cadence don't all act on the same tick */
+  slot: number;
 }
 
 export interface Raid {
@@ -106,11 +108,17 @@ export class World {
     this.day = emptyPeriod(0, 0, 0, this.faucetBps);
     this.week = emptyPeriod(0, 0, 0, this.faucetBps);
     for (let i = 0; i < this.pop.aiHaulers; i++) this.join("ai_hauler");
+    for (let i = 0; i < this.pop.marketMakers; i++) this.join("market_maker");
     for (let i = 0; i < this.pop.initialPlayers; i++) this.join(this.pickKind());
     // Opening grants are genesis supply, not inflation: start the books after them.
     const genesis = this.supply();
     this.day = emptyPeriod(0, genesis, this.agents.length, this.faucetBps);
     this.week = emptyPeriod(0, genesis, this.agents.length, this.faucetBps);
+  }
+
+  /** Gini is over pilots (humans + NPC traders); the Guild's float is an institution, not a player hoard. */
+  playerGolds(): number[] {
+    return this.agents.filter((a) => a.kind !== "market_maker").map((a) => a.gold);
   }
 
   supply(): number {
@@ -131,10 +139,11 @@ export class World {
   }
 
   private join(kind: AgentKind) {
-    const id = kind === "ai_hauler" ? `hauler-${this.agents.filter((a) => a.kind === "ai_hauler").length + 1}` : `p${this.nextId++}`;
+    const nth = this.agents.filter((a) => a.kind === kind).length + 1;
+    const id = kind === "ai_hauler" ? `hauler-${nth}` : kind === "market_maker" ? `guild-${nth}` : `p${this.nextId++}`;
     const town = TOWNS[this.rng.int(TOWNS.length)];
-    const grant = this.p.councilScalesGrant ? Math.floor((this.p.newPlayerGrant * this.faucetBps) / 10_000) : this.p.newPlayerGrant;
-    this.agents.push({ id, kind, gold: grant, town, inventory: { ore: 0, parts: 0, fuel: 0 }, haul: null, busyUntil: 0 });
+    const grant = kind === "market_maker" ? this.pop.marketMakerGold : this.p.councilScalesGrant ? Math.floor((this.p.newPlayerGrant * this.faucetBps) / 10_000) : this.p.newPlayerGrant;
+    this.agents.push({ id, kind, gold: grant, town, inventory: { ore: 0, parts: 0, fuel: 0 }, haul: null, busyUntil: 0, slot: this.agents.length });
     this.mint("new_player_grant", grant);
   }
 
@@ -190,7 +199,7 @@ export class World {
         // traders see cargo already en route to `to` (public haul log) and price it in
         const revenue = sellPayout(this.p, g, this.stock[to][g] + this.inTransit(to, g), qty, this.faucetBps);
         for (const route of ["safe", "lowsec"] as Route[]) {
-          if (a.kind === "safe" && route === "lowsec") continue;
+          if ((a.kind === "safe" || a.kind === "market_maker") && route === "lowsec") continue;
           const lane = laneIndex(a.town, to);
           const pAmb = ambushChanceBps(this.p, route, this.activeRaids(lane).length) / 10_000;
           const lossShare = this.p.ambushLossBps / 10_000;
@@ -248,14 +257,15 @@ export class World {
       this.count("lowsecHauls");
       this.laneTraffic[laneIndex(a.town, t.to)]++;
     }
-    if (a.kind === "ai_hauler") this.log("haul", `${a.id} hauls ${t.qty} ${t.good} ${a.town}→${t.to} via ${t.route}`);
+    if (a.kind === "ai_hauler" || a.kind === "market_maker") this.log("haul", `${a.id} hauls ${t.qty} ${t.good} ${a.town}→${t.to} via ${t.route}`);
   }
 
   private arrive(a: Agent) {
     const h = a.haul!;
     a.haul = null;
     a.town = h.to;
-    const fee = dockFee(this.p, a.gold);
+    // The Guild's float is exempt (it is the market maker, not a player hoard).
+    const fee = a.kind === "market_maker" ? 0 : dockFee(this.p, a.gold);
     if (fee > 0) {
       a.gold -= fee;
       this.burn("dock_fees", fee);
@@ -316,7 +326,7 @@ export class World {
     const minted = m.minted.npc_buy_orders + m.minted.new_player_grant;
     const burned = m.burned.npc_sell_orders + m.burned.tolls + m.burned.raid_fees + m.burned.dock_fees;
     m.sinkFaucetRatio = minted ? burned / minted : 0;
-    m.gini = gini(this.agents.map((a) => a.gold));
+    m.gini = gini(this.playerGolds());
     m.faucetBps = this.faucetBps;
     m.priceIndex = this.priceIndex();
   }
@@ -332,7 +342,12 @@ export class World {
     this.expireRaids();
     const order = this.rng.shuffle([...this.agents]);
     for (const a of order) if (a.haul && a.haul.arriveTick <= this.tick) this.arrive(a);
-    for (const a of order) if (!a.haul && a.busyUntil <= this.tick) this.act(a);
+    for (const a of order) {
+      if (a.haul || a.busyUntil > this.tick) continue;
+      const every = a.kind === "ai_hauler" || a.kind === "market_maker" ? this.pop.aiActEveryTicks : this.pop.humanActEveryTicks;
+      if (every > 1 && (this.tick + a.slot) % every !== 0) continue;
+      this.act(a);
+    }
     this.townsTick();
     this.day.ticks++;
     this.week.ticks++;
@@ -372,6 +387,6 @@ export function runSim(opts: SimOptions): SimResult {
     daily: w.daily,
     council: w.decisions,
     events: w.events,
-    final: { supply: w.supply(), faucetBps: w.faucetBps, players: w.agents.length, gini: gini(w.agents.map((a) => a.gold)) },
+    final: { supply: w.supply(), faucetBps: w.faucetBps, players: w.agents.length, gini: gini(w.playerGolds()) },
   };
 }

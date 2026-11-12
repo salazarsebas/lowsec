@@ -1,7 +1,7 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { gini, runSim, COUNCIL_RULE } from "@lowsec/sim";
+import { gini, runSim, COUNCIL_RULE, V02_NPCS } from "@lowsec/sim";
 import { AGENTS_ENABLED, CONTRACT_ID, COUNCIL_ID, COUNCIL_INTERVAL_MS, EXPLORER, HAULER_INTERVAL_MS, NETWORK, PORT, RELAYER_ID } from "./config.js";
 import { account, accountExists, call, view } from "./chain.js";
 import { fcKey } from "./keys.js";
@@ -112,7 +112,7 @@ app.post("/api/sim", async (c) => {
   const { weeks = 1, seed = 42 } = await c.req.json<{ weeks?: number; seed?: number }>().catch(() => ({}) as any);
   const w = Math.min(Math.max(Number(weeks) || 1, 1), 8);
   const pick = (r: ReturnType<typeof runSim>) => ({ daily: r.daily.map((d) => ({ day: d.period + 1, inflationBps: d.inflationBps, supply: d.supplyEnd, faucetBps: d.faucetBps, gini: d.gini, minted: d.minted, burned: d.burned, ambushes: d.ambushes, cargoBurned: d.cargoBurnedUnits, players: d.players })), final: r.final, events: r.events.filter((e) => e.type !== "haul").slice(-12) });
-  return c.json({ weeks: w, seed, rule: COUNCIL_RULE, council: pick(runSim({ weeks: w, seed, council: true })), baseline: pick(runSim({ weeks: w, seed, council: false })), original: pick(runSim({ weeks: w, seed, council: false, params: { dockFeeBps: 0 } })) });
+  return c.json({ weeks: w, seed, rule: COUNCIL_RULE, council: pick(runSim({ weeks: w, seed, council: true })), baseline: pick(runSim({ weeks: w, seed, council: false })), original: pick(runSim({ weeks: w, seed, council: false, params: { dockFeeBps: 0 }, population: V02_NPCS })) });
 });
 
 app.get("/api/feed", (c) => c.json(getFeed(100)));

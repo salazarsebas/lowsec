@@ -143,6 +143,12 @@ export interface Population {
   /** share of new scripted players by behaviour (bps): safe traders, risky traders, raiders. */
   mixBps: { safe: number; risky: number; raider: number };
   aiHaulers: number;
+  /** How often agents get a turn (in ticks). The live server's NPCs act every few ticks, humans even less. */
+  aiActEveryTicks: number;
+  humanActEveryTicks: number;
+  /** Market-maker NPCs ("the Guild"): trade like haulers but hold a treasury, see marketMakerGold. */
+  marketMakers: number;
+  marketMakerGold: number;
 }
 
 export const DEFAULT_POPULATION: Population = {
@@ -151,5 +157,19 @@ export const DEFAULT_POPULATION: Population = {
   surgePerDay: 6,
   newPlayersPerDay: 1,
   mixBps: { safe: 5_500, risky: 3_000, raider: 1_500 },
-  aiHaulers: 2,
+  // v0.3: 4 NPC traders + 1 market maker (the Guild). The live server runs the same cast.
+  aiHaulers: 4,
+  aiActEveryTicks: 3, // live NPCs take a turn about every 30 s (= 3 ticks)
+  humanActEveryTicks: 1,
+  marketMakers: 1,
+  marketMakerGold: 30_000, // the Guild's float: genesis supply, exempt from the docking fee, safe lanes only
 };
+
+/** v0.2 cast (what was live before v0.3): 2 NPC traders acting every tick, no Guild. */
+export const V02_NPCS: Partial<Population> = { aiHaulers: 2, aiActEveryTicks: 1, marketMakers: 0, marketMakerGold: 0 };
+
+/**
+ * "Live" scenario: what a judge sees on the hosted testnet demo — a handful of humans who act now and
+ * then (every ~6 ticks), no launch wave, plus the NPC cast. Merged over DEFAULT_POPULATION.
+ */
+export const LIVE_POPULATION: Partial<Population> = { initialPlayers: 3, surgeDays: 0, surgePerDay: 0, newPlayersPerDay: 0.3, humanActEveryTicks: 6 };

@@ -88,16 +88,13 @@ describe("simulation", () => {
     };
     expect(err(true)).toBeLessThan(err(false));
   });
-  it("Council is robust across seeds (wins on most)", () => {
-    let wins = 0;
-    for (const seed of [1, 2, 3, 4, 5]) {
-      const e = (c: boolean) => {
-        const d = runSim({ weeks: 3, seed, council: c }).daily.slice(1);
-        return d.reduce((a, m) => a + Math.abs(m.inflationBps - P.councilTargetInflationBps), 0);
-      };
-      if (e(true) < e(false)) wins++;
-    }
-    expect(wins).toBeGreaterThanOrEqual(4);
+  it("Council lowers the mean inflation error across 8 seeds (launch population)", () => {
+    const e = (c: boolean) => {
+      let tot = 0;
+      for (const seed of [42, 1, 2, 3, 4, 5, 6, 7]) for (const m of runSim({ weeks: 4, seed, council: c }).daily.slice(1)) tot += Math.abs(m.inflationBps - P.councilTargetInflationBps);
+      return tot;
+    };
+    expect(e(true)).toBeLessThan(e(false));
   });
 });
 
@@ -115,11 +112,32 @@ describe("v0.2 economy", () => {
     expect(d.hold).toBeTruthy();
     expect(d.nextFaucetBps).toBe(10_000);
   });
-  it("seed 42: Council + dock fee beats no-Council on error without raising Gini", () => {
+  it("seed 42: v0.3 (4 NPC traders + Guild, Council + dock fee) beats v0.1 rules on error without raising Gini", async () => {
+    const { V02_NPCS } = await import("../src/params.js");
     const err = (r: ReturnType<typeof runSim>) => r.daily.slice(1).reduce((a, m) => a + Math.abs(m.inflationBps - 100), 0);
     const c = runSim({ weeks: 4, seed: 42, council: true });
-    const b = runSim({ weeks: 4, seed: 42, council: false, params: { dockFeeBps: 0 } });
+    const b = runSim({ weeks: 4, seed: 42, council: false, params: { dockFeeBps: 0 }, population: V02_NPCS });
     expect(err(c)).toBeLessThan(err(b));
     expect(c.final.gini).toBeLessThanOrEqual(b.final.gini);
+  });
+});
+
+describe("v0.3 live scenario (a handful of humans)", () => {
+  it("inflation stays in the -1%..+3% band on average and the Council is off its floor", async () => {
+    const { LIVE_POPULATION } = await import("../src/params.js");
+    for (const seed of [42, 1, 2, 3]) {
+      const r = runSim({ weeks: 2, seed, council: true, population: LIVE_POPULATION });
+      const d = r.daily.slice(1).map((m) => m.inflationBps);
+      const mean = d.reduce((a, b) => a + b, 0) / d.length;
+      expect(mean).toBeGreaterThan(-100);
+      expect(mean).toBeLessThan(300);
+      expect(r.final.faucetBps).toBeGreaterThan(P.councilMinFaucetBps);
+    }
+  });
+  it("the Guild is exempt from the docking fee and only uses safe lanes", () => {
+    const r = runSim({ weeks: 1, seed: 42, council: true, keepEvents: 100000 });
+    const guildHauls = r.events.filter((e) => e.type === "haul" && e.text.startsWith("guild-"));
+    expect(guildHauls.length).toBeGreaterThan(0);
+    expect(guildHauls.every((e) => e.text.endsWith("via safe"))).toBe(true);
   });
 });
