@@ -1,0 +1,103 @@
+{
+  "total": 112.7,
+  "ambushRun": 4,
+  "source": {
+    "landing": 24.543,
+    "login": 27.044,
+    "joined": 36.286,
+    "run1": 38.826,
+    "depart1": 54.074,
+    "run2": 66.691,
+    "depart2": 80.871,
+    "run3": 96.457,
+    "depart3": 111.164,
+    "run4": 137.921,
+    "depart4": 154.095,
+    "ambush": 159.789,
+    "ambush_end": 165.792,
+    "tooltip": 173.216,
+    "tooltip_end": 185.897,
+    "intents": 186.982,
+    "intents_end": 193.421,
+    "report": 196.517,
+    "report_end": 210.042,
+    "ff": 212.641,
+    "ff_end": 221.466,
+    "pilot": "pilot5082.lowsec.testnet",
+    "raiders": [
+      "raider5082x0.lowsec.testnet",
+      "raider5082x1.lowsec.testnet",
+      "raider5082x2.lowsec.testnet"
+    ],
+    "ambushed": true,
+    "recordedAt": "2026-11-12T22:54:02.122Z"
+  },
+  "segments": [
+    {
+      "id": "hook",
+      "start": 0,
+      "end": 5,
+      "caption": "A real ambush on NEAR testnet: burned cargo is gone for good"
+    },
+    {
+      "id": "title",
+      "start": 5,
+      "end": 10,
+      "caption": null
+    },
+    {
+      "id": "login",
+      "start": 10,
+      "end": 21,
+      "caption": "No wallet, no seed phrase, no gas: type a name and play"
+    },
+    {
+      "id": "haul",
+      "start": 21,
+      "end": 33,
+      "caption": "Buy where it's cheap. Safe lane: slow, no risk. Lowsec: 3x faster, raiders camp it"
+    },
+    {
+      "id": "ambush",
+      "start": 33,
+      "end": 44.7,
+      "caption": "Ambushed: part of the cargo burns on-chain, part goes to the raider who staked on the lane"
+    },
+    {
+      "id": "tooltip",
+      "start": 44.7,
+      "end": 56.7,
+      "caption": "4 AI traders: strategy per epoch, decision hash anchored on-chain (MOCK mode shown: no NEAR AI key yet)"
+    },
+    {
+      "id": "report",
+      "start": 56.7,
+      "end": 72.7,
+      "caption": "Economic Report: every faucet and sink read from the contract. Council: one public rule, capped at 10% per epoch on-chain"
+    },
+    {
+      "id": "ff",
+      "start": 72.7,
+      "end": 84.7,
+      "caption": "Fast-forward 4 weeks in the simulator: the same rules as the contract"
+    },
+    {
+      "id": "agent",
+      "start": 84.7,
+      "end": 96.7,
+      "caption": "Real testnet run: an outside agent trading with its own NEAR account"
+    },
+    {
+      "id": "intents",
+      "start": 96.7,
+      "end": 104.7,
+      "caption": "NEAR Intents 1Click: live cross-chain deposit quote (quote only)"
+    },
+    {
+      "id": "close",
+      "start": 104.7,
+      "end": 112.7,
+      "caption": null
+    }
+  ]
+}

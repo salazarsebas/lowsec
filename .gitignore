@@ -21,3 +21,5 @@ coverage/
 apps/server/data/
 *.tsbuildinfo
 .tmp*
+demo/raw/
+demo/*.mp4

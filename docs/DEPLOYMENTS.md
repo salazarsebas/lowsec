@@ -86,3 +86,22 @@ Live examples on v0.2:
 The rejected update (before the ceil fix) was [GrCGXqKz…](https://testnet.nearblocks.io/txns/GrCGXqKzFgMbbFN3yMG8eq487Nkmpq1gMSfEz2Qi92HJ): "change exceeds the per-epoch bound". The rule asked for 8262 → 7435 (exactly −10%, truncated), and the old bound check rejected it by one unit.
 
 e2e pilots on v0.2: `raider44541` and `pilot44541` (pilot44541 was ambushed by raider44541: 6 ore burned, 4 looted), `raider69623` and `pilot69623` (14 Lowsec runs, no ambush).
+
+## v0.3 — NPC competition + the Guild (2026-11-12, ~23:40 CET)
+v0.3 changes the state layout (`Ledger.minted_guild_float`, `guild`), so the contract was redeployed with `reset_v3` (same `#[init(ignore_state)]` + contract-account-only pattern, new storage prefixes). Earlier transactions stay on the explorer. Scripts: `scripts/setup-v03-accounts.mjs`, `scripts/deploy-v03.mjs`, `scripts/redeploy-code.mjs` (keys are read from `~/.near-credentials`, never from the repo).
+
+| What | Tx |
+|---|---|
+| create `hauler-3.lowsec.testnet` (Moss) | [FECGk6FZ…](https://testnet.nearblocks.io/txns/FECGk6FZyFXSGiNCiNZZcchdHppJZaZ9XJn8f4Nd1jJs) |
+| create `hauler-4.lowsec.testnet` (Ryo) | [423SNUCw…](https://testnet.nearblocks.io/txns/423SNUCwQCtAHqMARaTbXeNN5WaNirPFGJw1m4UGGz7i) |
+| create `guild.lowsec.testnet` (the Guild) | [56PVFACm…](https://testnet.nearblocks.io/txns/56PVFACmiy4JBZpnD83D2suVUiio4Z67fhAJNvPmbtox) |
+| relayer key pool (3 extra keys on `lowsec-relayer.testnet`, parallel meta-txs) | [8mTykwdn…](https://testnet.nearblocks.io/txns/8mTykwdn7o7myLPsvc7uVTQjdd4mq68rQGgUrf1gEJD5), [GYdHgFgz…](https://testnet.nearblocks.io/txns/GYdHgFgzibtAMx7LTGtuczwtqRemrU6Wfc1EC6nzJcZ6), [7aKeuG6a…](https://testnet.nearblocks.io/txns/7aKeuG6awLQJRiEMDNhBPetWsi7h2igCatfMLfTPY3Ve) |
+| deploy v0.3 + `reset_v3` (atomic, one tx) | [4qNFJLcS…](https://testnet.nearblocks.io/txns/4qNFJLcSttJxjifKM3gSGvBbERjsDtKZGRxmqu9ksNqs) |
+| `seed_guild` (30,000 ◎ float, genesis epoch 0) | [EXDKXM9y…](https://testnet.nearblocks.io/txns/EXDKXM9yfKbAaMW4Atws6Dcm9zxrA8KgNRX58pW8pYe) |
+| `add_agent` × 4 (hauler-1..4) | [DwUp8CkH…](https://testnet.nearblocks.io/txns/DwUp8CkHVY2b7xfkvKVTQbL8F4AvD7NUYy3Nt6Whnee6) |
+| redeploy (adds `turn`: one call per NPC turn; state kept) | [AEHzt3C1…](https://testnet.nearblocks.io/txns/AEHzt3C17HaZXFUND5pmAKUkGL5PUp4CJgR4fscV5iVb) |
+| new FC keys incl. `turn`: hauler-1 · hauler-2 · hauler-3 · hauler-4 · guild | [GUxDJm56…](https://testnet.nearblocks.io/txns/GUxDJm56Yx25TtsCo6TVMzG3fC2mzjnJQqFxxeAsF11A) · [68K7M2Px…](https://testnet.nearblocks.io/txns/68K7M2PxLYskM3rkPxMY28AW3JeQsQu1HPCq94k9oXU5) · [AappL46A…](https://testnet.nearblocks.io/txns/AappL46AsABqKr7dxoHr6e5bVGMiDT8qbPD1n7ssyyGh) · [8n4DkkE5…](https://testnet.nearblocks.io/txns/8n4DkkE5VgwVVhvPaUX3NT9r8gaQVmUinpsgcUumAsDq) · [iGZQkoCh…](https://testnet.nearblocks.io/txns/iGZQkoChFAZUcDBh1sS7semDQTaWtjVQTCmdtfEteBS) |
+
+Why `turn`: NEAR function-call access keys can only sign a single FunctionCall action, so a batched sell+buy+start_haul meta-tx was rejected ("Access key requires full access"). `turn` does the same three steps with the same rules in one call.
+
+Demo recording (real ambush, 2026-11-12 ~23:52 CET): three raider pilots (`raider5082x0..2.lowsec.testnet`) staked raids on Mina–Forja, then `pilot5082.lowsec.testnet` was ambushed on its 4th Lowsec run (6 cargo burned, 4 looted by `raider5082x0`).

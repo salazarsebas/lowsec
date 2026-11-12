@@ -133,8 +133,9 @@ app.get("/api/feed", (c) => c.json(getFeed(100)));
 // ---------------------------------------------------------------- session goals
 app.get("/api/leaderboard", async (c) => {
   const names = Object.fromEntries(pilots().map((h) => [h.persona.id, `${h.persona.name} (AI)`]));
-  const accounts = [...new Set([...knownPlayers(), ...pilots().map((h) => h.persona.id)])].filter((p) => p !== GUILD_ID);
-  return c.json(await leaderboard(accounts, names));
+  const all = [...new Set([...knownPlayers(), ...pilots().map((h) => h.persona.id)])].filter((p) => p !== GUILD_ID);
+  const reg = await Promise.all(all.map((p) => view<any>("get_player", { account_id: p }, 60_000).then((x) => !!x).catch(() => false)));
+  return c.json(await leaderboard(all.filter((_, i) => reg[i]), names));
 });
 app.get("/api/contract-of-the-day", (c) => c.json(cotdStatus(c.req.query("account"))));
 
@@ -155,6 +156,7 @@ app.get("/api/agent/observe", async (c) => {
   const acc = c.req.query("account");
   const [eco, prm] = await Promise.all([view<Economy>("economy"), params()]);
   const player = acc ? await view<any>("get_player", { account_id: acc }) : null;
+  if (acc && player) addPlayer(acc); // external agents show up on the leaderboard like everyone else
   const gold = acc ? Number(await view<string>("mt_balance_of", { account_id: acc, token_id: "gold" })) : 0;
   const inv = acc ? (await view<string[]>("mt_batch_balance_of", { account_id: acc, token_ids: [...GOODS] })).map(Number) : [0, 0, 0];
   const options = player && !player.haul ? tradeOptions(toSimParams(prm), eco, player.town, gold).filter((o) => o.expectedProfit > 0).slice(0, 6) : [];

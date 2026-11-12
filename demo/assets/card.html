@@ -1,0 +1,21 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>
+html,body{margin:0;width:1920px;height:1080px;background:radial-gradient(ellipse at 50% 40%,#1b2840 0%,#0b0f17 70%);color:#e6edf7;font-family:"DejaVu Sans",system-ui,sans-serif;overflow:hidden}
+.wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:28px}
+.logo{font-size:150px;font-weight:800;letter-spacing:34px;margin-left:34px}
+.logo b{color:#ff5c7a}
+.sub{font-size:44px;color:#b9c6da;max-width:1500px;line-height:1.35}
+.small{font-size:34px;color:#8ea0bb;max-width:1600px;line-height:1.5}
+.pill{display:inline-block;border:2px solid #3ee6ff;color:#3ee6ff;border-radius:40px;padding:10px 30px;margin:0 10px;font-size:34px}
+.lane{position:absolute;left:0;right:0;bottom:120px;height:4px;background:repeating-linear-gradient(90deg,#ff5c7a 0 40px,transparent 40px 70px);opacity:.55}
+</style></head><body><div class="wrap" id="w"></div><div class="lane"></div>
+<script>
+const q = new URLSearchParams(location.search), k = q.get("k");
+const W = document.getElementById("w");
+if (k === "title") W.innerHTML = `<div class="logo">LOW<b>SEC</b></div><div class="sub">A player-driven trading economy on NEAR.<br>Humans and AI traders share one market, and every gold coin is on-chain.</div>`;
+else if (k === "close") W.innerHTML = `<div class="logo">LOW<b>SEC</b></div>
+  <div><span class="pill">Games With Real Economies</span><span class="pill">Agents</span><span class="pill">Swarms</span></div>
+  <div class="small">NEAR testnet · NEP-245 multi-token · gasless meta-transactions<br>NEAR AI Cloud (TEE) decisions anchored on-chain · NEAR Intents 1Click</div>
+  <div class="sub">Open source (MIT) · repo link in the description</div>`;
+else W.innerHTML = `<div class="sub">${q.get("t") ?? ""}</div>`;
+</script></body></html>

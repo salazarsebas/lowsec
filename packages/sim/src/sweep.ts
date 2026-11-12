@@ -28,9 +28,11 @@ export function stats(r: SimResult, p: Partial<Params> = {}) {
   };
 }
 
-export const ROWS: { name: string; council: boolean; params: Partial<Params>; pop: Partial<Population> }[] = [
+export const ROWS: { name: string; council: boolean; params: Partial<Params>; pop: Partial<Population>; liveOnly?: boolean }[] = [
   { name: "v0.1 rules (2 NPCs, no Council, no dock fee)", council: false, params: { dockFeeBps: 0 }, pop: V02_NPCS },
   { name: "v0.2 (2 NPCs, Council + dock fee)", council: true, params: {}, pop: V02_NPCS },
+  // what was actually deployed: 2 NPCs taking one action per 20 s step ≈ a trade every ~4 ticks
+  { name: "v0.2 as it ran live (2 NPCs acting every ~4 ticks)", council: true, params: {}, pop: { ...V02_NPCS, aiActEveryTicks: 4 }, liveOnly: true },
   { name: "v0.3 NPCs, no Council", council: false, params: {}, pop: {} },
   { name: "v0.3 NPCs + Council (DEFAULT)", council: true, params: {}, pop: {} },
 ];
@@ -40,6 +42,7 @@ export function sweep(popName: string, extra: Partial<Population>) {
   console.log("| config | mean infl./epoch | mean abs error vs 1% | worst epoch | epochs in band | Gini (pilots) | final faucet | epochs at 70% floor |");
   console.log("|---|---|---|---|---|---|---|---|");
   for (const row of ROWS) {
+    if (row.liveOnly && !extra.humanActEveryTicks) continue;
     const r = SEEDS.map((seed) => stats(runSim({ weeks: WEEKS, seed, council: row.council, params: row.params, population: { ...row.pop, ...extra } }), row.params));
     const pc = (x: number) => `${x.toFixed(2)}%`;
     console.log(`| ${row.name} | ${pc(avg(r.map((x) => x.mean)))} | ${avg(r.map((x) => x.mae)).toFixed(2)} pp | ${pc(avg(r.map((x) => x.worst)))} | ${(avg(r.map((x) => x.inBand)) * 100).toFixed(0)}% | ${avg(r.map((x) => x.gini)).toFixed(3)} | ${row.council ? pc(avg(r.map((x) => x.faucet))) : "100% (fixed)"} | ${row.council ? `${(avg(r.map((x) => x.atFloor)) * 100).toFixed(0)}%` : "—"} |`);

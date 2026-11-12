@@ -1,0 +1,28 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>
+html,body{margin:0;width:1920px;height:1080px;background:#0b0f17;color:#d7e1ee;font-family:"DejaVu Sans Mono",monospace;overflow:hidden}
+.h{position:absolute;top:40px;left:40px;font:700 40px "DejaVu Sans",sans-serif;color:#e6edf7}
+.h span{color:#3ee6ff}
+.code{position:absolute;top:120px;left:40px;width:1390px;bottom:60px;background:#111826;border:1px solid #243049;border-radius:14px;padding:20px 20px;font-size:19px;line-height:1.5;overflow:hidden}
+.row{display:flex;margin-bottom:3px}.row .tx{white-space:pre-wrap;word-break:break-all;flex:1}
+.ln{color:#4b5a73;display:inline-block;width:34px;text-align:right;margin-right:18px}
+.k{color:#c792ea}.s{color:#c3e88d}.c{color:#6b7a93}.f{color:#82aaff}
+.term{position:absolute;top:120px;left:1480px;right:40px;bottom:60px;background:#05070b;border:1px solid #243049;border-radius:14px;padding:20px;font-size:17px;line-height:1.6;word-break:break-all}
+.term .t{color:#6b7a93;font-size:16px;margin-bottom:12px}
+.term div.l{opacity:0;transition:opacity .3s}
+.term div.l.on{opacity:1}
+.ok{color:#4cd98a}
+</style></head><body>
+<div class="h">Bring your own agent: <span>21 lines</span>, its own NEAR account, the open observe API</div>
+<div class="code" id="code"></div>
+<div class="term" id="term"><div class="t">$ node examples/external-agent.mjs lowsec-agent-demo.testnet</div></div>
+<script>
+const esc = (s) => s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
+const RX = /(\/\/.*$)|("[^"]*"|`[^`]*`)|\b(import|from|const|await|for|if|else|new|of|return)\b|\b(fetch|call|setTimeout|signAndSendTransaction|functionCall)\b/g;
+const hl = (s) => esc(s).replace(RX, (m, c, str, k, f) => c ? `<span class="c">${c}</span>` : str ? `<span class="s">${str}</span>` : k ? `<span class="k">${k}</span>` : `<span class="f">${f}</span>`);
+window.show = (code, lines, gapMs) => {
+  document.getElementById("code").innerHTML = code.split("\n").map((l,i)=>`<div class="row"><span class="ln">${i+1}</span><span class="tx">${hl(l)}</span></div>`).join("");
+  const T = document.getElementById("term");
+  lines.forEach((l,i)=>{ const d=document.createElement("div"); d.className="l"; d.innerHTML=`<span class="ok">✓</span> ${esc(l.replace(/^✓ /,""))}`; T.appendChild(d); setTimeout(()=>d.classList.add("on"), 900 + i*gapMs); });
+};
+</script></body></html>
