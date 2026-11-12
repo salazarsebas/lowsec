@@ -19,3 +19,4 @@ coverage/
 .turbo/
 .vercel/
 apps/server/data/
+*.tsbuildinfo
