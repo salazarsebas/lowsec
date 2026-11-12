@@ -249,11 +249,12 @@ fn epochs_close_and_rule_is_public() {
     let epoch_s = c.params.tick_seconds * c.params.epoch_ticks;
     ctx("bob.testnet", epoch_s + 1);
     c.register(None); // closes epoch 0 (0 -> 500) before registering
+    c.mint(GOLD, &acc("alice.testnet"), 500, "test"); // +500 of non-grant growth in epoch 1
     ctx("carol.testnet", 2 * epoch_s + 1);
-    c.register(None); // closes epoch 1: 500 -> 1000 = +100%
+    c.register(None); // closes epoch 1: 500 -> 1500 (+200%), of which bob's 500 grant is onboarding
     let e = c.epochs(None, None);
     assert_eq!(e.len(), 2);
-    assert_eq!(e[1].inflation_bps, 10_000);
+    assert_eq!(e[1].inflation_bps, 20_000);
     assert_eq!(c.rule_next_faucet_bps(), Some(9_000)); // way above target -> -10%
     let sig = c.council_signal().unwrap();
     assert_eq!((sig.signal_bps, sig.supply_start, sig.supply_end, sig.hold), (10_000, 500, 1_000, None));
@@ -282,14 +283,15 @@ fn signal_is_mean_growth_over_window_and_idle_epochs_merge() {
     c.register(None);
     ctx("bob.testnet", epoch_s + 1);
     c.register(None); // closes epoch 0 (0 -> 500)
+    c.mint(GOLD, &acc("alice.testnet"), 500, "test"); // non-grant growth (bob's grant is excluded from the signal)
     // nobody plays for 3 epochs, then carol joins: one record spanning epochs 1..=3
     ctx("carol.testnet", 4 * epoch_s + 1);
     c.register(None);
     let e = c.epochs(None, None);
     assert_eq!(e.len(), 2);
     assert_eq!(e[1].span, 3);
-    // bob's grant (500 -> 1000) is spread over the 3 epochs it covers, not counted as one +100% epoch
-    assert_eq!(e[1].inflation_bps, 3_333);
+    // 500 -> 1500 is spread over the 3 epochs it covers, not counted as one +200% epoch
+    assert_eq!(e[1].inflation_bps, 6_666);
     let sig = c.council_signal().unwrap();
     // the genesis record (supply 0 -> 500) is excluded: only the 3-epoch record counts
     assert_eq!((sig.epochs_covered, sig.signal_bps), (3, 3_333));
@@ -467,4 +469,23 @@ fn turn_sells_buys_and_departs_in_one_call() {
     assert_eq!(gold(&c, "alice.testnet"), g0 + sold - cost - 12);
     assert_eq!(c.mt_balance_of(acc("alice.testnet"), "parts".into()).0, 0);
     assert!(c.get_player(acc("alice.testnet")).unwrap().haul.is_some());
+}
+
+#[test]
+fn council_signal_excludes_starter_grants() {
+    let mut c = game(None);
+    ctx("owner.testnet", 1);
+    c.seed_guild(acc("guild.lowsec.testnet"), U128(10_000), None);
+    // epoch 1: five newcomers join (2,500 gold of grants) and nothing else happens
+    let e = c.params.tick_seconds * c.params.epoch_ticks;
+    for (i, who) in ["a.testnet", "b.testnet", "c.testnet", "d.testnet", "f.testnet"].iter().enumerate() {
+        ctx(who, e + 1 + i as u64);
+        c.register(None);
+    }
+    ctx("a.testnet", 2 * e + 1);
+    c.tick();
+    let s = c.council_signal().unwrap();
+    let e = c.epochs(None, None);
+    assert!(e[e.len() - 1].supply_end > e[e.len() - 1].supply_start); // supply grew by the grants...
+    assert_eq!(s.signal_bps, 0); // ...but the signal does not count them as inflation
 }

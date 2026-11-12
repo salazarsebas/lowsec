@@ -105,3 +105,8 @@ v0.3 changes the state layout (`Ledger.minted_guild_float`, `guild`), so the con
 Why `turn`: NEAR function-call access keys can only sign a single FunctionCall action, so a batched sell+buy+start_haul meta-tx was rejected ("Access key requires full access"). `turn` does the same three steps with the same rules in one call.
 
 Demo recording (real ambush, 2026-11-12 ~23:52 CET): three raider pilots (`raider5082x0..2.lowsec.testnet`) staked raids on Mina–Forja, then `pilot5082.lowsec.testnet` was ambushed on its 4th Lowsec run (6 cargo burned, 4 looted by `raider5082x0`).
+
+## v0.3.1 — Council signal excludes starter grants (2026-11-13, ~00:25 CET)
+Code-only redeploy (state kept): `council_signal` subtracts the window's `minted_starter_grants` before computing growth; `COUNCIL_RULE` text updated.
+- deploy tx: `4KBrndk1qvtANC3ys9j6NEyPp37vG38SmqDjSGNguXnd` (wasm sha256 `331d7ddf…fb9c16`)
+- right after: epoch 10, raw supply growth 1.82%/epoch → signal without grants 0.31%/epoch → rule says faucet 70% → 70.96% at the next Council turn.

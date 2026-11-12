@@ -358,7 +358,11 @@ export class World {
       this.daily.push(this.day);
       // Council acts on the day that just closed (skip day 0: opening grants are not inflation).
       if (this.councilOn) {
-        this.signalBps = councilSignalBps(this.daily, this.p.councilWindowEpochs);
+        // v0.3.1: starter grants are onboarding, not inflation of existing holdings: the signal excludes them
+        // (on-chain: council_signal subtracts the window's minted_starter_grants the same way)
+        const w = this.daily.slice(-Math.max(1, this.p.councilWindowEpochs));
+        const grants = w.reduce((a, d) => a + d.minted.new_player_grant, 0);
+        this.signalBps = councilSignalBps(w.map((d, i) => ({ supplyStart: d.supplyStart, supplyEnd: i === w.length - 1 ? d.supplyEnd - grants : d.supplyEnd })), w.length);
         const d = councilDecide(this.p, this.day.period, this.faucetBps, this.signalBps, this.agents.length);
         this.decisions.push(d);
         if (d.nextFaucetBps !== this.faucetBps)

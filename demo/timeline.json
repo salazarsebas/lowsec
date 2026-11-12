@@ -1,36 +1,32 @@
 {
-  "total": 112.7,
-  "ambushRun": 4,
+  "total": 115.72,
+  "ambushRun": 2,
   "source": {
-    "landing": 24.543,
-    "login": 27.044,
-    "joined": 36.286,
-    "run1": 38.826,
-    "depart1": 54.074,
-    "run2": 66.691,
-    "depart2": 80.871,
-    "run3": 96.457,
-    "depart3": 111.164,
-    "run4": 137.921,
-    "depart4": 154.095,
-    "ambush": 159.789,
-    "ambush_end": 165.792,
-    "tooltip": 173.216,
-    "tooltip_end": 185.897,
-    "intents": 186.982,
-    "intents_end": 193.421,
-    "report": 196.517,
-    "report_end": 210.042,
-    "ff": 212.641,
-    "ff_end": 221.466,
-    "pilot": "pilot5082.lowsec.testnet",
+    "landing": 28.716,
+    "login": 31.217,
+    "joined": 45.275,
+    "run1": 47.838,
+    "depart1": 62.003,
+    "run2": 75.558,
+    "depart2": 89.187,
+    "ambush": 95.905,
+    "ambush_end": 101.908,
+    "tooltip": 109.3,
+    "tooltip_end": 122.02,
+    "intents": 123.125,
+    "intents_end": 129.57,
+    "report": 132.147,
+    "report_end": 151.792,
+    "ff": 154.604,
+    "ff_end": 166.437,
+    "pilot": "pilot90338.lowsec.testnet",
     "raiders": [
-      "raider5082x0.lowsec.testnet",
-      "raider5082x1.lowsec.testnet",
-      "raider5082x2.lowsec.testnet"
+      "raider90338x0.lowsec.testnet",
+      "raider90338x1.lowsec.testnet",
+      "raider90338x2.lowsec.testnet"
     ],
     "ambushed": true,
-    "recordedAt": "2026-11-12T22:54:02.122Z"
+    "recordedAt": "2026-11-12T23:23:30.597Z"
   },
   "segments": [
     {
@@ -42,61 +38,61 @@
     {
       "id": "title",
       "start": 5,
-      "end": 10,
+      "end": 12,
       "caption": null
     },
     {
       "id": "login",
-      "start": 10,
-      "end": 21,
+      "start": 12,
+      "end": 23,
       "caption": "No wallet, no seed phrase, no gas: type a name and play"
     },
     {
       "id": "haul",
-      "start": 21,
-      "end": 33,
-      "caption": "Buy where it's cheap. Safe lane: slow, no risk. Lowsec: 3x faster, raiders camp it"
+      "start": 23,
+      "end": 35,
+      "caption": "Safe lane: slow, no risk. Lowsec: 3x faster, but raiders camp it"
     },
     {
       "id": "ambush",
-      "start": 33,
-      "end": 44.7,
-      "caption": "Ambushed: part of the cargo burns on-chain, part goes to the raider who staked on the lane"
+      "start": 35,
+      "end": 47.72,
+      "caption": "Ambushed: part of the cargo burns on-chain, part goes to the raider"
     },
     {
       "id": "tooltip",
-      "start": 44.7,
-      "end": 56.7,
-      "caption": "4 AI traders: strategy per epoch, decision hash anchored on-chain (MOCK mode shown: no NEAR AI key yet)"
+      "start": 47.72,
+      "end": 59.72,
+      "caption": "4 AI traders: strategy per epoch, hash on-chain (MOCK: no NEAR AI key yet)"
     },
     {
       "id": "report",
-      "start": 56.7,
-      "end": 72.7,
-      "caption": "Economic Report: every faucet and sink read from the contract. Council: one public rule, capped at 10% per epoch on-chain"
+      "start": 59.72,
+      "end": 75.72,
+      "caption": "Economic Report from the contract · Council: one public rule, max 10%/epoch"
     },
     {
       "id": "ff",
-      "start": 72.7,
-      "end": 84.7,
+      "start": 75.72,
+      "end": 87.72,
       "caption": "Fast-forward 4 weeks in the simulator: the same rules as the contract"
     },
     {
       "id": "agent",
-      "start": 84.7,
-      "end": 96.7,
+      "start": 87.72,
+      "end": 99.72,
       "caption": "Real testnet run: an outside agent trading with its own NEAR account"
     },
     {
       "id": "intents",
-      "start": 96.7,
-      "end": 104.7,
+      "start": 99.72,
+      "end": 107.72,
       "caption": "NEAR Intents 1Click: live cross-chain deposit quote (quote only)"
     },
     {
       "id": "close",
-      "start": 104.7,
-      "end": 112.7,
+      "start": 107.72,
+      "end": 115.72,
       "caption": null
     }
   ]

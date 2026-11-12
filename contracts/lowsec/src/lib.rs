@@ -191,7 +191,7 @@ pub const PLAYER_METHODS: &str = "register,buy,sell,start_haul,arrive,raid,turn"
 /// NEAR given to a new player sub-account for its own storage (gas is paid by the relayer via NEP-366).
 pub const PLAYER_FUNDING: NearToken = NearToken::from_millinear(10);
 
-pub const COUNCIL_RULE: &str = "faucet_next = clamp(faucet × (1 − gain × (inflation − target)), ±10%/epoch, [70%, 110%]); inflation = mean supply growth over the last 3 epochs; hold if < 5 players";
+pub const COUNCIL_RULE: &str = "faucet_next = clamp(faucet × (1 − gain × (inflation − target)), ±10%/epoch, [70%, 110%]); inflation = mean supply growth over the last 3 epochs, excluding starter grants; hold if < 5 players";
 
 #[near]
 impl Lowsec {
@@ -600,7 +600,10 @@ impl Lowsec {
         let first_real = (0..n).find(|i| self.epochs.get(*i as u32).unwrap().supply_start > 0)?;
         let w = self.params.council_window_epochs.max(1).min(n - first_real);
         let recs: Vec<&EpochRecord> = ((n - w)..n).map(|i| self.epochs.get(i as u32).unwrap()).collect();
-        let window: Vec<(u128, u128, u64)> = recs.iter().map(|r| (r.supply_start, r.supply_end, r.span)).collect();
+        // v0.3.1: starter grants are onboarding, not inflation of existing holdings: take them out of the signal
+        let grants: u128 = recs.iter().map(|r| r.ledger.minted_starter_grants).sum();
+        let last = recs.len() - 1;
+        let window: Vec<(u128, u128, u64)> = recs.iter().enumerate().map(|(i, r)| (r.supply_start, if i == last { r.supply_end.saturating_sub(grants) } else { r.supply_end }, r.span)).collect();
         let signal = council_signal_bps(&window);
         let players = recs[recs.len() - 1].players_end;
         let faucet = self.params.faucet_bps;

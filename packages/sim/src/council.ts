@@ -11,7 +11,7 @@
 import type { Params } from "./params.js";
 
 export const COUNCIL_RULE =
-  "faucet_next = clamp(faucet × (1 − gain × (inflation − target)), ±10%/epoch, [70%, 110%]); inflation = mean supply growth over the last 3 epochs; hold if < 5 players";
+  "faucet_next = clamp(faucet × (1 − gain × (inflation − target)), ±10%/epoch, [70%, 110%]); inflation = mean supply growth over the last 3 epochs, excluding starter grants; hold if < 5 players";
 
 export interface CouncilDecision {
   epoch: number;

@@ -83,16 +83,16 @@ Live v0.2 showed ~9%/epoch growth with the Council stuck at its 70% floor. The s
 v0.3 fixes the cause, not the symptom: more competition (4 AI traders + the Guild, all trading every turn) closes margins, and the Guild's float makes supply big enough that one haul is a rounding error. No price rule changed and the contract's pricing is the same; the new code is `seed_guild`, the docking-fee exemption for the Guild, and `turn` (one call per NPC turn, because function-call keys can't batch actions).
 
 ### Honest numbers (8 seeds × 4 weeks, `pnpm --filter @lowsec/sim sweep`)
-Mean abs error is the mean |epoch inflation − 1%| from epoch 2 on (epoch 1 is the launch spike). Band = −1%…+3% per epoch. Gini is over pilots (humans + NPC traders); the Guild's float is excluded because it is an institution, not a player hoard.
+Mean abs error is the mean |epoch inflation − 1%| from epoch 2 on (epoch 1 is the launch spike). Band = −1%…+3% per epoch. Gini is over pilots (humans + NPC traders); the Guild's float is excluded because it is an institution, not a player hoard. Since v0.3.1 the Council's signal **excludes starter grants** (new pilots are onboarding, not inflation of existing holdings); the columns above still report total supply growth, grants included.
 
 **Launch population** (40 players + a 10-day wave, ~100 pilots):
 
 | config | mean infl./epoch | mean abs error vs 1% | worst epoch | epochs in band | Gini (pilots) | final faucet | epochs at 70% floor |
 |---|---|---|---|---|---|---|---|
 | v0.1 rules (2 NPCs, no Council, no dock fee) | 3.37% | 2.79 pp | 13.09% | 67% | 0.181 | 100% (fixed) | — |
-| v0.2 (2 NPCs, Council + dock fee) | 2.30% | 2.48 pp | 11.16% | 60% | 0.137 | 90.19% | 35% |
+| v0.2 (2 NPCs, Council + dock fee) | 2.81% | 2.43 pp | 11.16% | 64% | 0.141 | 110.00% | 0% |
 | v0.3 NPCs, no Council | 1.50% | 1.57 pp | 5.46% | 70% | 0.138 | 100% (fixed) | — |
-| v0.3 NPCs + Council (DEFAULT) | 1.27% | 1.47 pp | 5.21% | 76% | 0.143 | 93.46% | 32% |
+| v0.3 NPCs + Council (DEFAULT) | 1.61% | 1.36 pp | 5.24% | 71% | 0.143 | 110.00% | 0% |
 
 **Live population** (3 humans who act now and then, no wave: what a judge sees on testnet):
 
@@ -106,7 +106,7 @@ Mean abs error is the mean |epoch inflation − 1%| from epoch 2 on (epoch 1 is 
 
 **Tradeoffs, plainly.**
 - The big win is the NPC cast, not the Council: in the live population v0.3 *without* a Council already lands 93% of epochs in band. With the Council, the worst epoch improves (3.5% vs 4.9%), but mean error is slightly worse (1.15 vs 0.99 pp) and Gini slightly higher (0.080 vs 0.069), because it keeps nudging a market that is already near target. In the launch population the Council helps on every metric except Gini (0.143 vs 0.138).
-- After a launch the Council still spends ~30% of epochs at its floor in the launch population: the first epochs after genesis are a real spike (fresh towns, full margins), and a 3-epoch window remembers it.
+- Why grants are excluded (v0.3.1): live, 4 pilots joining in one epoch added +2,000 ◎ of grants (+4.5% supply), and the Council cut the faucet down to its 70% floor for it, although trading alone was near 1%. With the old signal the launch sweep spent 32% of epochs at the floor; with grants excluded it spends 0%. The cost, plainly: in the launch wave the Council now ends at its 110% ceiling and mean total inflation rises (1.61% vs 1.27%), because grant-driven growth is no longer something the faucet fights. Mean abs error still improves (1.36 vs 1.47 pp). The live population is unchanged (few grants).
 - The Guild's 30,000 ◎ float is disclosed everywhere (Report ledger, README, `guild()` view). It is genesis supply, it pays tolls like anyone, and it only uses Safe lanes, so it never feeds raiders.
 
 ## AI agents (Agents + Swarms)
