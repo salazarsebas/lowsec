@@ -86,6 +86,8 @@ export class World {
   keepEvents: number;
   /** Lowsec hauls per lane during the current day (public info, reset daily, decays). */
   laneTraffic = [0, 0, 0];
+  /** smoothed inflation signal the Council reacts to */
+  signalBps = 0;
   private nextId = 0;
   private playersJoinedToday = 0;
 
@@ -131,7 +133,7 @@ export class World {
   private join(kind: AgentKind) {
     const id = kind === "ai_hauler" ? `hauler-${this.agents.filter((a) => a.kind === "ai_hauler").length + 1}` : `p${this.nextId++}`;
     const town = TOWNS[this.rng.int(TOWNS.length)];
-    const grant = Math.floor((this.p.newPlayerGrant * this.faucetBps) / 10_000);
+    const grant = this.p.councilScalesGrant ? Math.floor((this.p.newPlayerGrant * this.faucetBps) / 10_000) : this.p.newPlayerGrant;
     this.agents.push({ id, kind, gold: grant, town, inventory: { ore: 0, parts: 0, fuel: 0 }, haul: null, busyUntil: 0 });
     this.mint("new_player_grant", grant);
   }
@@ -336,7 +338,8 @@ export class World {
       this.daily.push(this.day);
       // Council acts on the day that just closed (skip day 0: opening grants are not inflation).
       if (this.councilOn) {
-        const d = councilStep(this.p, this.day.period, this.faucetBps, this.day.inflationBps);
+        this.signalBps = this.day.period === 0 ? this.day.inflationBps : Math.trunc((this.day.inflationBps * this.p.councilSmoothingBps + this.signalBps * (10_000 - this.p.councilSmoothingBps)) / 10_000);
+        const d = councilStep(this.p, this.day.period, this.faucetBps, this.signalBps);
         this.decisions.push(d);
         if (d.nextFaucetBps !== this.faucetBps)
           this.log("council", `Council epoch ${d.epoch}: inflation ${(d.inflationBps / 100).toFixed(2)}% vs target ${(d.targetBps / 100).toFixed(2)}% → faucets ${(d.prevFaucetBps / 100).toFixed(1)}% → ${(d.nextFaucetBps / 100).toFixed(1)}%`);

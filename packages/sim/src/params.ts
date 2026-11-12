@@ -74,6 +74,10 @@ export interface Params {
   councilMaxStepBps: number; // ±10% per epoch, ALSO enforced on-chain
   councilMinFaucetBps: number;
   councilMaxFaucetBps: number;
+  /** EMA weight (bps) of the newest epoch in the inflation signal the Council reacts to. 10000 = no smoothing. */
+  councilSmoothingBps: number;
+  /** If false, the starter grant is NOT scaled by the Council (protects newcomers / Gini). */
+  councilScalesGrant: boolean;
 
   ticksPerWeek: number;
 }
@@ -113,6 +117,8 @@ export const DEFAULT_PARAMS: Params = {
   councilMaxStepBps: 1_000,
   councilMinFaucetBps: 7_000,
   councilMaxFaucetBps: 11_000,
+  councilSmoothingBps: 10_000,
+  councilScalesGrant: true,
 
   ticksPerWeek: 168,
 };

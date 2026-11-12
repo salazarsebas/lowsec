@@ -474,6 +474,16 @@ impl Lowsec {
         self.params.clone()
     }
 
+    /// Epoch in which the council last acted (None = never). The council may act once per epoch.
+    pub fn last_council_epoch(&self) -> Option<u64> {
+        self.last_council_epoch
+    }
+
+    /// Milliseconds since epoch at which tick 0 started (lets clients compute exact arrival times).
+    pub fn genesis_ms(&self) -> u64 {
+        self.genesis_ms
+    }
+
     pub fn current_tick(&self) -> u64 {
         self.now_tick()
     }
