@@ -1,0 +1,11 @@
+{
+  "name": "lowsec",
+  "private": true,
+  "version": "0.1.0",
+  "license": "MIT",
+  "scripts": {
+    "sim": "pnpm --filter @lowsec/sim sim",
+    "test": "pnpm -r test"
+  },
+  "packageManager": "pnpm@10.34.6"
+}

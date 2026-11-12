@@ -1,0 +1,1490 @@
+{
+ "params": {
+  "basePrice": {
+   "ore": 10,
+   "parts": 20,
+   "fuel": 14
+  },
+  "targetStock": 400,
+  "minPriceBps": 2500,
+  "maxPriceBps": 40000,
+  "npcSpreadBps": 9000,
+  "faucetBps": 10000,
+  "homeGoalBps": 20000,
+  "awayGoalBps": 5000,
+  "reversionBps": 600,
+  "maxStockFactor": 4,
+  "travelTicks": {
+   "safe": 3,
+   "lowsec": 1
+  },
+  "tollGold": {
+   "safe": 12,
+   "lowsec": 3
+  },
+  "cargoCap": 25,
+  "relocateBps": 300,
+  "ambushBaseBps": 800,
+  "ambushPerRaidBps": 1200,
+  "ambushMaxBps": 6000,
+  "ambushLossBps": 5000,
+  "raiderLootBps": 2000,
+  "raidMinStake": 100,
+  "raidFeeBps": 1000,
+  "raidTtlTicks": 24,
+  "newPlayerGrant": 500,
+  "epochTicks": 24,
+  "councilTargetInflationBps": 100,
+  "councilGain": 2,
+  "councilMaxStepBps": 1000,
+  "councilMinFaucetBps": 7000,
+  "councilMaxFaucetBps": 11000,
+  "ticksPerWeek": 168
+ },
+ "price": [
+  {
+   "good": "ore",
+   "stock": 0,
+   "faucet": 7000,
+   "ask": 40,
+   "bid": 25,
+   "buy10": 400,
+   "sell10": 250
+  },
+  {
+   "good": "ore",
+   "stock": 0,
+   "faucet": 9137,
+   "ask": 40,
+   "bid": 32,
+   "buy10": 400,
+   "sell10": 320
+  },
+  {
+   "good": "ore",
+   "stock": 0,
+   "faucet": 10000,
+   "ask": 40,
+   "bid": 36,
+   "buy10": 400,
+   "sell10": 360
+  },
+  {
+   "good": "ore",
+   "stock": 0,
+   "faucet": 11000,
+   "ask": 40,
+   "bid": 39,
+   "buy10": 400,
+   "sell10": 390
+  },
+  {
+   "good": "ore",
+   "stock": 1,
+   "faucet": 7000,
+   "ask": 40,
+   "bid": 25,
+   "buy10": 400,
+   "sell10": 250
+  },
+  {
+   "good": "ore",
+   "stock": 1,
+   "faucet": 9137,
+   "ask": 40,
+   "bid": 32,
+   "buy10": 400,
+   "sell10": 320
+  },
+  {
+   "good": "ore",
+   "stock": 1,
+   "faucet": 10000,
+   "ask": 40,
+   "bid": 36,
+   "buy10": 400,
+   "sell10": 360
+  },
+  {
+   "good": "ore",
+   "stock": 1,
+   "faucet": 11000,
+   "ask": 40,
+   "bid": 39,
+   "buy10": 400,
+   "sell10": 390
+  },
+  {
+   "good": "ore",
+   "stock": 7,
+   "faucet": 7000,
+   "ask": 40,
+   "bid": 25,
+   "buy10": 400,
+   "sell10": 250
+  },
+  {
+   "good": "ore",
+   "stock": 7,
+   "faucet": 9137,
+   "ask": 40,
+   "bid": 32,
+   "buy10": 400,
+   "sell10": 320
+  },
+  {
+   "good": "ore",
+   "stock": 7,
+   "faucet": 10000,
+   "ask": 40,
+   "bid": 36,
+   "buy10": 400,
+   "sell10": 360
+  },
+  {
+   "good": "ore",
+   "stock": 7,
+   "faucet": 11000,
+   "ask": 40,
+   "bid": 39,
+   "buy10": 400,
+   "sell10": 390
+  },
+  {
+   "good": "ore",
+   "stock": 50,
+   "faucet": 7000,
+   "ask": 40,
+   "bid": 25,
+   "buy10": 400,
+   "sell10": 250
+  },
+  {
+   "good": "ore",
+   "stock": 50,
+   "faucet": 9137,
+   "ask": 40,
+   "bid": 32,
+   "buy10": 400,
+   "sell10": 320
+  },
+  {
+   "good": "ore",
+   "stock": 50,
+   "faucet": 10000,
+   "ask": 40,
+   "bid": 36,
+   "buy10": 400,
+   "sell10": 360
+  },
+  {
+   "good": "ore",
+   "stock": 50,
+   "faucet": 11000,
+   "ask": 40,
+   "bid": 39,
+   "buy10": 400,
+   "sell10": 390
+  },
+  {
+   "good": "ore",
+   "stock": 100,
+   "faucet": 7000,
+   "ask": 40,
+   "bid": 25,
+   "buy10": 400,
+   "sell10": 230
+  },
+  {
+   "good": "ore",
+   "stock": 100,
+   "faucet": 9137,
+   "ask": 40,
+   "bid": 32,
+   "buy10": 400,
+   "sell10": 310
+  },
+  {
+   "good": "ore",
+   "stock": 100,
+   "faucet": 10000,
+   "ask": 40,
+   "bid": 36,
+   "buy10": 400,
+   "sell10": 340
+  },
+  {
+   "good": "ore",
+   "stock": 100,
+   "faucet": 11000,
+   "ask": 40,
+   "bid": 39,
+   "buy10": 400,
+   "sell10": 370
+  },
+  {
+   "good": "ore",
+   "stock": 199,
+   "faucet": 7000,
+   "ask": 20,
+   "bid": 12,
+   "buy10": 200,
+   "sell10": 110
+  },
+  {
+   "good": "ore",
+   "stock": 199,
+   "faucet": 9137,
+   "ask": 20,
+   "bid": 16,
+   "buy10": 200,
+   "sell10": 150
+  },
+  {
+   "good": "ore",
+   "stock": 199,
+   "faucet": 10000,
+   "ask": 20,
+   "bid": 18,
+   "buy10": 200,
+   "sell10": 170
+  },
+  {
+   "good": "ore",
+   "stock": 199,
+   "faucet": 11000,
+   "ask": 20,
+   "bid": 19,
+   "buy10": 200,
+   "sell10": 180
+  },
+  {
+   "good": "ore",
+   "stock": 200,
+   "faucet": 7000,
+   "ask": 20,
+   "bid": 12,
+   "buy10": 200,
+   "sell10": 110
+  },
+  {
+   "good": "ore",
+   "stock": 200,
+   "faucet": 9137,
+   "ask": 20,
+   "bid": 16,
+   "buy10": 200,
+   "sell10": 150
+  },
+  {
+   "good": "ore",
+   "stock": 200,
+   "faucet": 10000,
+   "ask": 20,
+   "bid": 18,
+   "buy10": 200,
+   "sell10": 170
+  },
+  {
+   "good": "ore",
+   "stock": 200,
+   "faucet": 11000,
+   "ask": 20,
+   "bid": 19,
+   "buy10": 200,
+   "sell10": 180
+  },
+  {
+   "good": "ore",
+   "stock": 201,
+   "faucet": 7000,
+   "ask": 19,
+   "bid": 11,
+   "buy10": 200,
+   "sell10": 110
+  },
+  {
+   "good": "ore",
+   "stock": 201,
+   "faucet": 9137,
+   "ask": 19,
+   "bid": 15,
+   "buy10": 200,
+   "sell10": 150
+  },
+  {
+   "good": "ore",
+   "stock": 201,
+   "faucet": 10000,
+   "ask": 19,
+   "bid": 17,
+   "buy10": 200,
+   "sell10": 170
+  },
+  {
+   "good": "ore",
+   "stock": 201,
+   "faucet": 11000,
+   "ask": 19,
+   "bid": 18,
+   "buy10": 200,
+   "sell10": 180
+  },
+  {
+   "good": "ore",
+   "stock": 400,
+   "faucet": 7000,
+   "ask": 10,
+   "bid": 6,
+   "buy10": 100,
+   "sell10": 50
+  },
+  {
+   "good": "ore",
+   "stock": 400,
+   "faucet": 9137,
+   "ask": 10,
+   "bid": 8,
+   "buy10": 100,
+   "sell10": 70
+  },
+  {
+   "good": "ore",
+   "stock": 400,
+   "faucet": 10000,
+   "ask": 10,
+   "bid": 9,
+   "buy10": 100,
+   "sell10": 80
+  },
+  {
+   "good": "ore",
+   "stock": 400,
+   "faucet": 11000,
+   "ask": 10,
+   "bid": 9,
+   "buy10": 100,
+   "sell10": 80
+  },
+  {
+   "good": "ore",
+   "stock": 799,
+   "faucet": 7000,
+   "ask": 5,
+   "bid": 3,
+   "buy10": 50,
+   "sell10": 20
+  },
+  {
+   "good": "ore",
+   "stock": 799,
+   "faucet": 9137,
+   "ask": 5,
+   "bid": 4,
+   "buy10": 50,
+   "sell10": 30
+  },
+  {
+   "good": "ore",
+   "stock": 799,
+   "faucet": 10000,
+   "ask": 5,
+   "bid": 4,
+   "buy10": 50,
+   "sell10": 30
+  },
+  {
+   "good": "ore",
+   "stock": 799,
+   "faucet": 11000,
+   "ask": 5,
+   "bid": 4,
+   "buy10": 50,
+   "sell10": 30
+  },
+  {
+   "good": "ore",
+   "stock": 1600,
+   "faucet": 7000,
+   "ask": 2,
+   "bid": 1,
+   "buy10": 20,
+   "sell10": 10
+  },
+  {
+   "good": "ore",
+   "stock": 1600,
+   "faucet": 9137,
+   "ask": 2,
+   "bid": 1,
+   "buy10": 20,
+   "sell10": 10
+  },
+  {
+   "good": "ore",
+   "stock": 1600,
+   "faucet": 10000,
+   "ask": 2,
+   "bid": 1,
+   "buy10": 20,
+   "sell10": 10
+  },
+  {
+   "good": "ore",
+   "stock": 1600,
+   "faucet": 11000,
+   "ask": 2,
+   "bid": 1,
+   "buy10": 20,
+   "sell10": 10
+  },
+  {
+   "good": "parts",
+   "stock": 0,
+   "faucet": 7000,
+   "ask": 80,
+   "bid": 50,
+   "buy10": 800,
+   "sell10": 500
+  },
+  {
+   "good": "parts",
+   "stock": 0,
+   "faucet": 9137,
+   "ask": 80,
+   "bid": 65,
+   "buy10": 800,
+   "sell10": 650
+  },
+  {
+   "good": "parts",
+   "stock": 0,
+   "faucet": 10000,
+   "ask": 80,
+   "bid": 72,
+   "buy10": 800,
+   "sell10": 720
+  },
+  {
+   "good": "parts",
+   "stock": 0,
+   "faucet": 11000,
+   "ask": 80,
+   "bid": 79,
+   "buy10": 800,
+   "sell10": 790
+  },
+  {
+   "good": "parts",
+   "stock": 1,
+   "faucet": 7000,
+   "ask": 80,
+   "bid": 50,
+   "buy10": 800,
+   "sell10": 500
+  },
+  {
+   "good": "parts",
+   "stock": 1,
+   "faucet": 9137,
+   "ask": 80,
+   "bid": 65,
+   "buy10": 800,
+   "sell10": 650
+  },
+  {
+   "good": "parts",
+   "stock": 1,
+   "faucet": 10000,
+   "ask": 80,
+   "bid": 72,
+   "buy10": 800,
+   "sell10": 720
+  },
+  {
+   "good": "parts",
+   "stock": 1,
+   "faucet": 11000,
+   "ask": 80,
+   "bid": 79,
+   "buy10": 800,
+   "sell10": 790
+  },
+  {
+   "good": "parts",
+   "stock": 7,
+   "faucet": 7000,
+   "ask": 80,
+   "bid": 50,
+   "buy10": 800,
+   "sell10": 500
+  },
+  {
+   "good": "parts",
+   "stock": 7,
+   "faucet": 9137,
+   "ask": 80,
+   "bid": 65,
+   "buy10": 800,
+   "sell10": 650
+  },
+  {
+   "good": "parts",
+   "stock": 7,
+   "faucet": 10000,
+   "ask": 80,
+   "bid": 72,
+   "buy10": 800,
+   "sell10": 720
+  },
+  {
+   "good": "parts",
+   "stock": 7,
+   "faucet": 11000,
+   "ask": 80,
+   "bid": 79,
+   "buy10": 800,
+   "sell10": 790
+  },
+  {
+   "good": "parts",
+   "stock": 50,
+   "faucet": 7000,
+   "ask": 80,
+   "bid": 50,
+   "buy10": 800,
+   "sell10": 500
+  },
+  {
+   "good": "parts",
+   "stock": 50,
+   "faucet": 9137,
+   "ask": 80,
+   "bid": 65,
+   "buy10": 800,
+   "sell10": 650
+  },
+  {
+   "good": "parts",
+   "stock": 50,
+   "faucet": 10000,
+   "ask": 80,
+   "bid": 72,
+   "buy10": 800,
+   "sell10": 720
+  },
+  {
+   "good": "parts",
+   "stock": 50,
+   "faucet": 11000,
+   "ask": 80,
+   "bid": 79,
+   "buy10": 800,
+   "sell10": 790
+  },
+  {
+   "good": "parts",
+   "stock": 100,
+   "faucet": 7000,
+   "ask": 80,
+   "bid": 50,
+   "buy10": 800,
+   "sell10": 470
+  },
+  {
+   "good": "parts",
+   "stock": 100,
+   "faucet": 9137,
+   "ask": 80,
+   "bid": 65,
+   "buy10": 800,
+   "sell10": 620
+  },
+  {
+   "good": "parts",
+   "stock": 100,
+   "faucet": 10000,
+   "ask": 80,
+   "bid": 72,
+   "buy10": 800,
+   "sell10": 680
+  },
+  {
+   "good": "parts",
+   "stock": 100,
+   "faucet": 11000,
+   "ask": 80,
+   "bid": 79,
+   "buy10": 800,
+   "sell10": 750
+  },
+  {
+   "good": "parts",
+   "stock": 199,
+   "faucet": 7000,
+   "ask": 40,
+   "bid": 25,
+   "buy10": 410,
+   "sell10": 240
+  },
+  {
+   "good": "parts",
+   "stock": 199,
+   "faucet": 9137,
+   "ask": 40,
+   "bid": 32,
+   "buy10": 410,
+   "sell10": 320
+  },
+  {
+   "good": "parts",
+   "stock": 199,
+   "faucet": 10000,
+   "ask": 40,
+   "bid": 36,
+   "buy10": 410,
+   "sell10": 350
+  },
+  {
+   "good": "parts",
+   "stock": 199,
+   "faucet": 11000,
+   "ask": 40,
+   "bid": 39,
+   "buy10": 410,
+   "sell10": 380
+  },
+  {
+   "good": "parts",
+   "stock": 200,
+   "faucet": 7000,
+   "ask": 40,
+   "bid": 25,
+   "buy10": 410,
+   "sell10": 240
+  },
+  {
+   "good": "parts",
+   "stock": 200,
+   "faucet": 9137,
+   "ask": 40,
+   "bid": 32,
+   "buy10": 410,
+   "sell10": 320
+  },
+  {
+   "good": "parts",
+   "stock": 200,
+   "faucet": 10000,
+   "ask": 40,
+   "bid": 36,
+   "buy10": 410,
+   "sell10": 350
+  },
+  {
+   "good": "parts",
+   "stock": 200,
+   "faucet": 11000,
+   "ask": 40,
+   "bid": 39,
+   "buy10": 410,
+   "sell10": 380
+  },
+  {
+   "good": "parts",
+   "stock": 201,
+   "faucet": 7000,
+   "ask": 39,
+   "bid": 24,
+   "buy10": 400,
+   "sell10": 230
+  },
+  {
+   "good": "parts",
+   "stock": 201,
+   "faucet": 9137,
+   "ask": 39,
+   "bid": 32,
+   "buy10": 400,
+   "sell10": 310
+  },
+  {
+   "good": "parts",
+   "stock": 201,
+   "faucet": 10000,
+   "ask": 39,
+   "bid": 35,
+   "buy10": 400,
+   "sell10": 340
+  },
+  {
+   "good": "parts",
+   "stock": 201,
+   "faucet": 11000,
+   "ask": 39,
+   "bid": 38,
+   "buy10": 400,
+   "sell10": 370
+  },
+  {
+   "good": "parts",
+   "stock": 400,
+   "faucet": 7000,
+   "ask": 20,
+   "bid": 12,
+   "buy10": 200,
+   "sell10": 110
+  },
+  {
+   "good": "parts",
+   "stock": 400,
+   "faucet": 9137,
+   "ask": 20,
+   "bid": 16,
+   "buy10": 200,
+   "sell10": 150
+  },
+  {
+   "good": "parts",
+   "stock": 400,
+   "faucet": 10000,
+   "ask": 20,
+   "bid": 18,
+   "buy10": 200,
+   "sell10": 170
+  },
+  {
+   "good": "parts",
+   "stock": 400,
+   "faucet": 11000,
+   "ask": 20,
+   "bid": 19,
+   "buy10": 200,
+   "sell10": 180
+  },
+  {
+   "good": "parts",
+   "stock": 799,
+   "faucet": 7000,
+   "ask": 10,
+   "bid": 6,
+   "buy10": 100,
+   "sell10": 50
+  },
+  {
+   "good": "parts",
+   "stock": 799,
+   "faucet": 9137,
+   "ask": 10,
+   "bid": 8,
+   "buy10": 100,
+   "sell10": 70
+  },
+  {
+   "good": "parts",
+   "stock": 799,
+   "faucet": 10000,
+   "ask": 10,
+   "bid": 9,
+   "buy10": 100,
+   "sell10": 80
+  },
+  {
+   "good": "parts",
+   "stock": 799,
+   "faucet": 11000,
+   "ask": 10,
+   "bid": 9,
+   "buy10": 100,
+   "sell10": 80
+  },
+  {
+   "good": "parts",
+   "stock": 1600,
+   "faucet": 7000,
+   "ask": 5,
+   "bid": 3,
+   "buy10": 50,
+   "sell10": 30
+  },
+  {
+   "good": "parts",
+   "stock": 1600,
+   "faucet": 9137,
+   "ask": 5,
+   "bid": 4,
+   "buy10": 50,
+   "sell10": 40
+  },
+  {
+   "good": "parts",
+   "stock": 1600,
+   "faucet": 10000,
+   "ask": 5,
+   "bid": 4,
+   "buy10": 50,
+   "sell10": 40
+  },
+  {
+   "good": "parts",
+   "stock": 1600,
+   "faucet": 11000,
+   "ask": 5,
+   "bid": 4,
+   "buy10": 50,
+   "sell10": 40
+  },
+  {
+   "good": "fuel",
+   "stock": 0,
+   "faucet": 7000,
+   "ask": 56,
+   "bid": 35,
+   "buy10": 560,
+   "sell10": 350
+  },
+  {
+   "good": "fuel",
+   "stock": 0,
+   "faucet": 9137,
+   "ask": 56,
+   "bid": 46,
+   "buy10": 560,
+   "sell10": 460
+  },
+  {
+   "good": "fuel",
+   "stock": 0,
+   "faucet": 10000,
+   "ask": 56,
+   "bid": 50,
+   "buy10": 560,
+   "sell10": 500
+  },
+  {
+   "good": "fuel",
+   "stock": 0,
+   "faucet": 11000,
+   "ask": 56,
+   "bid": 55,
+   "buy10": 560,
+   "sell10": 550
+  },
+  {
+   "good": "fuel",
+   "stock": 1,
+   "faucet": 7000,
+   "ask": 56,
+   "bid": 35,
+   "buy10": 560,
+   "sell10": 350
+  },
+  {
+   "good": "fuel",
+   "stock": 1,
+   "faucet": 9137,
+   "ask": 56,
+   "bid": 46,
+   "buy10": 560,
+   "sell10": 460
+  },
+  {
+   "good": "fuel",
+   "stock": 1,
+   "faucet": 10000,
+   "ask": 56,
+   "bid": 50,
+   "buy10": 560,
+   "sell10": 500
+  },
+  {
+   "good": "fuel",
+   "stock": 1,
+   "faucet": 11000,
+   "ask": 56,
+   "bid": 55,
+   "buy10": 560,
+   "sell10": 550
+  },
+  {
+   "good": "fuel",
+   "stock": 7,
+   "faucet": 7000,
+   "ask": 56,
+   "bid": 35,
+   "buy10": 560,
+   "sell10": 350
+  },
+  {
+   "good": "fuel",
+   "stock": 7,
+   "faucet": 9137,
+   "ask": 56,
+   "bid": 46,
+   "buy10": 560,
+   "sell10": 460
+  },
+  {
+   "good": "fuel",
+   "stock": 7,
+   "faucet": 10000,
+   "ask": 56,
+   "bid": 50,
+   "buy10": 560,
+   "sell10": 500
+  },
+  {
+   "good": "fuel",
+   "stock": 7,
+   "faucet": 11000,
+   "ask": 56,
+   "bid": 55,
+   "buy10": 560,
+   "sell10": 550
+  },
+  {
+   "good": "fuel",
+   "stock": 50,
+   "faucet": 7000,
+   "ask": 56,
+   "bid": 35,
+   "buy10": 560,
+   "sell10": 350
+  },
+  {
+   "good": "fuel",
+   "stock": 50,
+   "faucet": 9137,
+   "ask": 56,
+   "bid": 46,
+   "buy10": 560,
+   "sell10": 460
+  },
+  {
+   "good": "fuel",
+   "stock": 50,
+   "faucet": 10000,
+   "ask": 56,
+   "bid": 50,
+   "buy10": 560,
+   "sell10": 500
+  },
+  {
+   "good": "fuel",
+   "stock": 50,
+   "faucet": 11000,
+   "ask": 56,
+   "bid": 55,
+   "buy10": 560,
+   "sell10": 550
+  },
+  {
+   "good": "fuel",
+   "stock": 100,
+   "faucet": 7000,
+   "ask": 56,
+   "bid": 35,
+   "buy10": 560,
+   "sell10": 330
+  },
+  {
+   "good": "fuel",
+   "stock": 100,
+   "faucet": 9137,
+   "ask": 56,
+   "bid": 46,
+   "buy10": 560,
+   "sell10": 430
+  },
+  {
+   "good": "fuel",
+   "stock": 100,
+   "faucet": 10000,
+   "ask": 56,
+   "bid": 50,
+   "buy10": 560,
+   "sell10": 470
+  },
+  {
+   "good": "fuel",
+   "stock": 100,
+   "faucet": 11000,
+   "ask": 56,
+   "bid": 55,
+   "buy10": 560,
+   "sell10": 520
+  },
+  {
+   "good": "fuel",
+   "stock": 199,
+   "faucet": 7000,
+   "ask": 28,
+   "bid": 17,
+   "buy10": 280,
+   "sell10": 170
+  },
+  {
+   "good": "fuel",
+   "stock": 199,
+   "faucet": 9137,
+   "ask": 28,
+   "bid": 23,
+   "buy10": 280,
+   "sell10": 220
+  },
+  {
+   "good": "fuel",
+   "stock": 199,
+   "faucet": 10000,
+   "ask": 28,
+   "bid": 25,
+   "buy10": 280,
+   "sell10": 240
+  },
+  {
+   "good": "fuel",
+   "stock": 199,
+   "faucet": 11000,
+   "ask": 28,
+   "bid": 27,
+   "buy10": 280,
+   "sell10": 260
+  },
+  {
+   "good": "fuel",
+   "stock": 200,
+   "faucet": 7000,
+   "ask": 28,
+   "bid": 17,
+   "buy10": 280,
+   "sell10": 170
+  },
+  {
+   "good": "fuel",
+   "stock": 200,
+   "faucet": 9137,
+   "ask": 28,
+   "bid": 23,
+   "buy10": 280,
+   "sell10": 220
+  },
+  {
+   "good": "fuel",
+   "stock": 200,
+   "faucet": 10000,
+   "ask": 28,
+   "bid": 25,
+   "buy10": 280,
+   "sell10": 240
+  },
+  {
+   "good": "fuel",
+   "stock": 200,
+   "faucet": 11000,
+   "ask": 28,
+   "bid": 27,
+   "buy10": 280,
+   "sell10": 260
+  },
+  {
+   "good": "fuel",
+   "stock": 201,
+   "faucet": 7000,
+   "ask": 27,
+   "bid": 17,
+   "buy10": 280,
+   "sell10": 170
+  },
+  {
+   "good": "fuel",
+   "stock": 201,
+   "faucet": 9137,
+   "ask": 27,
+   "bid": 22,
+   "buy10": 280,
+   "sell10": 220
+  },
+  {
+   "good": "fuel",
+   "stock": 201,
+   "faucet": 10000,
+   "ask": 27,
+   "bid": 24,
+   "buy10": 280,
+   "sell10": 240
+  },
+  {
+   "good": "fuel",
+   "stock": 201,
+   "faucet": 11000,
+   "ask": 27,
+   "bid": 26,
+   "buy10": 280,
+   "sell10": 260
+  },
+  {
+   "good": "fuel",
+   "stock": 400,
+   "faucet": 7000,
+   "ask": 14,
+   "bid": 8,
+   "buy10": 140,
+   "sell10": 80
+  },
+  {
+   "good": "fuel",
+   "stock": 400,
+   "faucet": 9137,
+   "ask": 14,
+   "bid": 11,
+   "buy10": 140,
+   "sell10": 100
+  },
+  {
+   "good": "fuel",
+   "stock": 400,
+   "faucet": 10000,
+   "ask": 14,
+   "bid": 12,
+   "buy10": 140,
+   "sell10": 110
+  },
+  {
+   "good": "fuel",
+   "stock": 400,
+   "faucet": 11000,
+   "ask": 14,
+   "bid": 13,
+   "buy10": 140,
+   "sell10": 120
+  },
+  {
+   "good": "fuel",
+   "stock": 799,
+   "faucet": 7000,
+   "ask": 7,
+   "bid": 4,
+   "buy10": 70,
+   "sell10": 30
+  },
+  {
+   "good": "fuel",
+   "stock": 799,
+   "faucet": 9137,
+   "ask": 7,
+   "bid": 5,
+   "buy10": 70,
+   "sell10": 40
+  },
+  {
+   "good": "fuel",
+   "stock": 799,
+   "faucet": 10000,
+   "ask": 7,
+   "bid": 6,
+   "buy10": 70,
+   "sell10": 50
+  },
+  {
+   "good": "fuel",
+   "stock": 799,
+   "faucet": 11000,
+   "ask": 7,
+   "bid": 6,
+   "buy10": 70,
+   "sell10": 50
+  },
+  {
+   "good": "fuel",
+   "stock": 1600,
+   "faucet": 7000,
+   "ask": 3,
+   "bid": 1,
+   "buy10": 30,
+   "sell10": 10
+  },
+  {
+   "good": "fuel",
+   "stock": 1600,
+   "faucet": 9137,
+   "ask": 3,
+   "bid": 2,
+   "buy10": 30,
+   "sell10": 20
+  },
+  {
+   "good": "fuel",
+   "stock": 1600,
+   "faucet": 10000,
+   "ask": 3,
+   "bid": 2,
+   "buy10": 30,
+   "sell10": 20
+  },
+  {
+   "good": "fuel",
+   "stock": 1600,
+   "faucet": 11000,
+   "ask": 3,
+   "bid": 2,
+   "buy10": 30,
+   "sell10": 20
+  }
+ ],
+ "ambush": [
+  {
+   "raids": 0,
+   "bps": 800
+  },
+  {
+   "raids": 1,
+   "bps": 2000
+  },
+  {
+   "raids": 2,
+   "bps": 3200
+  },
+  {
+   "raids": 3,
+   "bps": 4400
+  },
+  {
+   "raids": 5,
+   "bps": 6000
+  },
+  {
+   "raids": 9,
+   "bps": 6000
+  }
+ ],
+ "split": [
+  {
+   "qty": 1,
+   "raider": true,
+   "burned": 0,
+   "looted": 0,
+   "kept": 1
+  },
+  {
+   "qty": 1,
+   "raider": false,
+   "burned": 0,
+   "looted": 0,
+   "kept": 1
+  },
+  {
+   "qty": 2,
+   "raider": true,
+   "burned": 1,
+   "looted": 0,
+   "kept": 1
+  },
+  {
+   "qty": 2,
+   "raider": false,
+   "burned": 1,
+   "looted": 0,
+   "kept": 1
+  },
+  {
+   "qty": 9,
+   "raider": true,
+   "burned": 3,
+   "looted": 1,
+   "kept": 5
+  },
+  {
+   "qty": 9,
+   "raider": false,
+   "burned": 4,
+   "looted": 0,
+   "kept": 5
+  },
+  {
+   "qty": 10,
+   "raider": true,
+   "burned": 3,
+   "looted": 2,
+   "kept": 5
+  },
+  {
+   "qty": 10,
+   "raider": false,
+   "burned": 5,
+   "looted": 0,
+   "kept": 5
+  },
+  {
+   "qty": 25,
+   "raider": true,
+   "burned": 7,
+   "looted": 5,
+   "kept": 13
+  },
+  {
+   "qty": 25,
+   "raider": false,
+   "burned": 12,
+   "looted": 0,
+   "kept": 13
+  },
+  {
+   "qty": 33,
+   "raider": true,
+   "burned": 10,
+   "looted": 6,
+   "kept": 17
+  },
+  {
+   "qty": 33,
+   "raider": false,
+   "burned": 16,
+   "looted": 0,
+   "kept": 17
+  }
+ ],
+ "fees": [
+  {
+   "stake": 100,
+   "fee": 10
+  },
+  {
+   "stake": 150,
+   "fee": 15
+  },
+  {
+   "stake": 999,
+   "fee": 99
+  },
+  {
+   "stake": 12345,
+   "fee": 1234
+  }
+ ],
+ "revert": [
+  {
+   "stock": 1,
+   "home": true,
+   "next": 48
+  },
+  {
+   "stock": 1,
+   "home": false,
+   "next": 12
+  },
+  {
+   "stock": 50,
+   "home": true,
+   "next": 95
+  },
+  {
+   "stock": 50,
+   "home": false,
+   "next": 59
+  },
+  {
+   "stock": 100,
+   "home": true,
+   "next": 142
+  },
+  {
+   "stock": 100,
+   "home": false,
+   "next": 106
+  },
+  {
+   "stock": 101,
+   "home": true,
+   "next": 142
+  },
+  {
+   "stock": 101,
+   "home": false,
+   "next": 106
+  },
+  {
+   "stock": 400,
+   "home": true,
+   "next": 424
+  },
+  {
+   "stock": 400,
+   "home": false,
+   "next": 388
+  },
+  {
+   "stock": 799,
+   "home": true,
+   "next": 800
+  },
+  {
+   "stock": 799,
+   "home": false,
+   "next": 764
+  },
+  {
+   "stock": 800,
+   "home": true,
+   "next": 800
+  },
+  {
+   "stock": 800,
+   "home": false,
+   "next": 764
+  },
+  {
+   "stock": 1600,
+   "home": true,
+   "next": 1552
+  },
+  {
+   "stock": 1600,
+   "home": false,
+   "next": 1516
+  }
+ ],
+ "council": [
+  {
+   "faucet": 10000,
+   "supplyStart": 100000,
+   "supplyEnd": 103000,
+   "inflationBps": 300,
+   "next": 9600
+  },
+  {
+   "faucet": 10000,
+   "supplyStart": 100000,
+   "supplyEnd": 100500,
+   "inflationBps": 50,
+   "next": 10100
+  },
+  {
+   "faucet": 10000,
+   "supplyStart": 100000,
+   "supplyEnd": 99000,
+   "inflationBps": -100,
+   "next": 10400
+  },
+  {
+   "faucet": 7000,
+   "supplyStart": 50000,
+   "supplyEnd": 60000,
+   "inflationBps": 2000,
+   "next": 7000
+  },
+  {
+   "faucet": 10900,
+   "supplyStart": 80000,
+   "supplyEnd": 80100,
+   "inflationBps": 12,
+   "next": 11000
+  },
+  {
+   "faucet": 8500,
+   "supplyStart": 120000,
+   "supplyEnd": 121300,
+   "inflationBps": 108,
+   "next": 8486
+  }
+ ]
+}
