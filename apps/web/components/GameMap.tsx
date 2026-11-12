@@ -2,7 +2,8 @@
 import { useState } from "react";
 import type { Npc, State } from "@/lib/types";
 import { GOODS, GOOD_ICON, TOWNS, TOWN_LABEL, laneOf } from "@/lib/types";
-import { AttestationBadge } from "./Badge";
+import { NpcCard } from "./NpcCard";
+import { NPC_COLORS } from "@/lib/types";
 
 const POS = [
   { x: 150, y: 320 },
@@ -38,7 +39,7 @@ export function GameMap({ s, now, blasts = [], shake = false }: { s: State; now:
     return Math.min(Math.max((now - t0) / (t1 - t0), 0.02), 0.98);
   };
   const movers: Mover[] = [];
-  s.npcs.forEach((n, i) => n.player && movers.push({ id: n.id, label: n.name, color: i === 0 ? "#f5a524" : "#c06cff", town: n.player.town, haul: n.player.haul, npc: n }));
+  s.npcs.forEach((n, i) => n.player && movers.push({ id: n.id, label: n.name, color: NPC_COLORS[i % NPC_COLORS.length], town: n.player.town, haul: n.player.haul, npc: n }));
   if (s.me?.player) movers.push({ id: s.me.account, label: "You", color: "#3ee6ff", town: s.me.player.town, haul: s.me.player.haul });
   const pairs: [number, number][] = [[0, 1], [1, 2], [0, 2]];
   return (
@@ -114,19 +115,11 @@ export function GameMap({ s, now, blasts = [], shake = false }: { s: State; now:
       </svg>
       {hover && (() => {
         const m = movers.find((x) => x.id === hover);
-        const d = m?.npc?.decisions[0];
         if (!m?.npc) return null;
         return (
           <div className="tooltip">
             <div className="tt-head"><b>{m.npc.name}</b> <span className="muted">{m.npc.id}</span></div>
-            <div className="muted small">{m.npc.style}</div>
-            {d ? (
-              <>
-                <div className="tt-action">→ {d.summary}</div>
-                <div className="tt-reason">“{d.reasoning}”</div>
-                <div className="tt-foot"><AttestationBadge d={d} /> <span className="muted small">{d.model}</span></div>
-              </>
-            ) : <div className="muted">thinking…</div>}
+            <NpcCard n={m.npc} explorer={s.explorer} />
           </div>
         );
       })()}

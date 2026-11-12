@@ -67,6 +67,8 @@ pub struct Ledger {
     pub ambushes: u64,
     pub raids: u64,
     pub burned_dock_fees: u128,
+    /// v0.3: the Guild's float, minted ONCE in the genesis epoch (genesis supply, not inflation)
+    pub minted_guild_float: u128,
 }
 
 #[near(serializers = [borsh, json])]
@@ -151,6 +153,8 @@ pub struct Lowsec {
     epochs: Vector<EpochRecord>,
     last_council_epoch: Option<u64>,
     decisions: Vector<Decision>,
+    /// v0.3: the Guild (NPC market maker). Its float is exempt from the docking fee.
+    guild: Option<AccountId>,
 }
 
 #[near(serializers = [json])]
@@ -179,10 +183,11 @@ pub struct Economy {
     pub current_epoch: Ledger,
     pub epoch_supply_start: u128,
     pub decisions: u64,
+    pub guild: Option<AccountId>,
 }
 
 /// Methods a player's in-browser function-call key may call (all zero-deposit).
-pub const PLAYER_METHODS: &str = "register,buy,sell,start_haul,arrive,raid";
+pub const PLAYER_METHODS: &str = "register,buy,sell,start_haul,arrive,raid,turn";
 /// NEAR given to a new player sub-account for its own storage (gas is paid by the relayer via NEP-366).
 pub const PLAYER_FUNDING: NearToken = NearToken::from_millinear(10);
 
@@ -205,31 +210,32 @@ impl Lowsec {
             council,
             params,
             genesis_ms: env::block_timestamp_ms(),
-            balances: LookupMap::new(b"b2".to_vec()),
+            balances: LookupMap::new(b"b3".to_vec()),
             supply: BTreeMap::new(),
-            players: LookupMap::new(b"p2".to_vec()),
+            players: LookupMap::new(b"p3".to_vec()),
             player_count: 0,
             stock,
             stock_tick: 0,
             raids: vec![],
             next_haul_id: 0,
-            agents: LookupSet::new(b"a2".to_vec()),
+            agents: LookupSet::new(b"a3".to_vec()),
             total: Ledger::default(),
             epoch: 0,
             epoch_supply_start: 0,
             epoch_players_start: 0,
             epoch_ledger: Ledger::default(),
-            epochs: Vector::new(b"e2".to_vec()),
+            epochs: Vector::new(b"e3".to_vec()),
             last_council_epoch: None,
-            decisions: Vector::new(b"d2".to_vec()),
+            decisions: Vector::new(b"d3".to_vec()),
+            guild: None,
         }
     }
 
-    /// v0.2 state reset (testnet): the v0.1 history stays on the explorer; new state uses new storage prefixes.
+    /// v0.3 state reset (testnet): earlier history stays on the explorer; new state uses new storage prefixes.
     /// #[private] + explicit check: only the contract account itself can call it.
     #[init(ignore_state)]
     #[private]
-    pub fn reset_v2(owner: AccountId, council: AccountId, params: Option<Params>) -> Self {
+    pub fn reset_v3(owner: AccountId, council: AccountId, params: Option<Params>) -> Self {
         require!(env::predecessor_account_id() == env::current_account_id(), "only the contract account");
         Self::new(owner, council, params)
     }
@@ -352,6 +358,29 @@ impl Lowsec {
         h
     }
 
+    /// One NPC/agent turn in ONE function call (function-call keys can't batch actions):
+    /// sell every good held at the current town, then optionally buy `qty` of `good` and depart for `to`
+    /// via `route` with exactly that cargo. Same rules, same prices as calling sell/buy/start_haul one by one.
+    pub fn turn(&mut self, good: Option<String>, qty: u64, to: Option<String>, route: Option<String>) -> near_sdk::serde_json::Value {
+        self.touch();
+        let who = env::predecessor_account_id();
+        let mut sold: u128 = 0;
+        for g in GOODS {
+            let q = self.bal(g, &who);
+            if q > 0 {
+                sold += self.sell(g.to_string(), q as u64);
+            }
+        }
+        let mut out = json!({ "sold_for": sold.to_string() });
+        if let (Some(g), Some(t), Some(r)) = (good, to, route) {
+            let cost = if qty > 0 { self.buy(g.clone(), qty) } else { 0 };
+            let h = self.start_haul(t, r, Some(g), qty);
+            out["cost"] = json!(cost.to_string());
+            out["haul"] = json!(h);
+        }
+        out
+    }
+
     /// Resolve a haul once it has arrived. Anyone may call it (keepers / NPCs), so a player
     /// cannot sit on a bad roll. Lowsec hauls can be ambushed: part of the cargo is BURNED,
     /// part is looted by the raider whose stake triggered the ambush.
@@ -368,7 +397,7 @@ impl Lowsec {
         p.town = h.to;
         p.haul = None;
         // progressive docking fee: only gold above the exemption is taxed (burned)
-        let fee = dock_fee(&self.params, self.bal(GOLD, &who));
+        let fee = if self.guild.as_ref() == Some(&who) { 0 } else { dock_fee(&self.params, self.bal(GOLD, &who)) };
         if fee > 0 {
             self.burn(GOLD, &who, fee, "dock_fee");
             self.total.burned_dock_fees += fee;
@@ -480,6 +509,32 @@ impl Lowsec {
     }
 
     // ---------------------------------------------------------------- admin (owner)
+
+    /// v0.3: seat the Guild (NPC market maker that restocks scarce towns over SAFE lanes) with its float.
+    /// Owner only, once, and only in the genesis epoch, so the float is genesis supply and never shows up
+    /// as inflation. The Guild is a normal player otherwise (same prices, same tolls, same contract rules)
+    /// except that its float is exempt from the docking fee.
+    pub fn seed_guild(&mut self, account_id: AccountId, float: near_sdk::json_types::U128, town: Option<String>) -> Player {
+        self.assert_owner();
+        self.touch();
+        require!(self.guild.is_none(), "guild already seated");
+        require!(self.epoch == 0, "the guild float can only be minted in the genesis epoch");
+        require!(!self.players.contains_key(&account_id), "already registered");
+        let town = town.map(|t| town_index(&t).unwrap_or_else(|| env::panic_str("unknown town"))).unwrap_or(0);
+        let p = Player { town, haul: None, joined_tick: self.now_tick(), hauls: 0, ambushed: 0, raids_won: 0 };
+        self.players.insert(account_id.clone(), p.clone());
+        self.player_count += 1;
+        self.mint(GOLD, &account_id, float.0, "guild_float");
+        self.total.minted_guild_float += float.0;
+        self.epoch_ledger.minted_guild_float += float.0;
+        self.guild = Some(account_id.clone());
+        events::game("guild_seated", json!({ "account_id": account_id, "float": float.0.to_string(), "town": TOWNS[town as usize] }));
+        p
+    }
+
+    pub fn guild(&self) -> Option<AccountId> {
+        self.guild.clone()
+    }
 
     pub fn add_agent(&mut self, account_id: AccountId) {
         self.assert_owner();
@@ -593,6 +648,7 @@ impl Lowsec {
             current_epoch: self.epoch_ledger.clone(),
             epoch_supply_start: self.epoch_supply_start,
             decisions: self.decisions.len() as u64,
+            guild: self.guild.clone(),
         }
     }
 

@@ -60,7 +60,7 @@ export interface TradeOption {
 }
 
 /** Enumerate haul options from `town` for a budget, priced with the on-chain stocks and rules. */
-export function tradeOptions(p: Params, eco: Economy, townIdx: number, gold: number, riskWeight = 1): TradeOption[] {
+export function tradeOptions(p: Params, eco: Economy, townIdx: number, gold: number, riskWeight = 1, inTransit: (to: number, good: number) => number = () => 0): TradeOption[] {
   const out: TradeOption[] = [];
   const budget = Math.floor(gold * 0.8);
   GOODS.forEach((g, gi) => {
@@ -71,7 +71,8 @@ export function tradeOptions(p: Params, eco: Economy, townIdx: number, gold: num
     const cost = buyCost(p, g, s, qty);
     TOWNS.forEach((to, ti) => {
       if (ti === townIdx) return;
-      const rev = sellPayout(p, g, eco.towns[ti].stock[gi], qty, eco.faucet_bps);
+      // cargo already en route there (public haul log) will hit the same buy orders first: price it in
+      const rev = sellPayout(p, g, eco.towns[ti].stock[gi] + inTransit(ti, gi), qty, eco.faucet_bps);
       for (const route of ["safe", "lowsec"] as Route[]) {
         const lane = laneOf(townIdx, ti);
         const raids = eco.raids.filter((r) => r.lane === lane).length;

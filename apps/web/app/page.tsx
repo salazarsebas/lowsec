@@ -5,12 +5,12 @@ import { GOODS, GOOD_ICON, TOWNS, TOWN_LABEL } from "@/lib/types";
 import { act, clearSession, loadSession, signup, type Session } from "@/lib/near";
 import { GameMap, pointOn, type Blast } from "@/components/GameMap";
 import { ContractOfDay, Leaderboard, Onboarding } from "@/components/Goals";
+import { NpcCard } from "@/components/NpcCard";
 import { Deposit } from "@/components/Deposit";
 import { boom, chime, setSound } from "@/lib/sound";
 import { Actions } from "@/components/Actions";
 import { Report } from "@/components/Report";
 import { Simulate } from "@/components/Simulate";
-import { AttestationBadge } from "@/components/Badge";
 
 type Tab = "play" | "report" | "sim";
 
@@ -175,25 +175,13 @@ export default function Home() {
             <ContractOfDay account={session?.accountId} />
             <Leaderboard me={session?.accountId} />
             <div className="panel">
-              <h3>AI haulers <span className="muted small">(hover them on the map)</span></h3>
-              {s.npcs.map((n) => {
-                const d = n.decisions[0];
-                return (
-                  <div key={n.id} className="npc">
-                    <div><b>{n.name}</b> <a className="muted small" href={`${explorer}/address/${n.id}`} target="_blank" rel="noreferrer">{n.id}</a> · {n.balances.gold}{GOOD_ICON.gold}</div>
-                    {d ? (
-                      <>
-                        <div className="tt-action">→ {d.summary}</div>
-                        <div className="tt-reason">“{d.reasoning}”</div>
-                        <div className="tt-foot">
-                          <AttestationBadge d={d} />
-                          {d.decisionTx && <a className="small" href={`${explorer}/txns/${d.decisionTx}`} target="_blank" rel="noreferrer">on-chain decision #{d.decisionId} ↗</a>}
-                        </div>
-                      </>
-                    ) : <div className="muted small">waiting for its next decision…</div>}
-                  </div>
-                );
-              })}
+              <h3>NPC traders <span className="muted small">(4 AI + the Guild · hover them on the map)</span></h3>
+              {s.npcs.map((n) => (
+                <div key={n.id} className="npc">
+                  <div><b>{n.name}</b> <a className="muted small" href={`${explorer}/address/${n.id}`} target="_blank" rel="noreferrer">{n.id}</a> · {n.balances.gold}{GOOD_ICON.gold}</div>
+                  <NpcCard n={n} explorer={explorer} compact />
+                </div>
+              ))}
             </div>
             <Deposit />
             <div className="panel feed">

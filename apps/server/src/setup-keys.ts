@@ -9,14 +9,15 @@
 import { mkdirSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { KeyPair, parseNearAmount } from "near-api-js";
-import { CONTRACT_ID, COUNCIL_ID, FC_DIR, HAULERS } from "./config.js";
+import { CONTRACT_ID, COUNCIL_ID, FC_DIR, GUILD_ID, HAULERS } from "./config.js";
 import { account } from "./chain.js";
 import { fullKey } from "./keys.js";
 
 const jobs = [
   { id: CONTRACT_ID, role: "onboarder", methods: ["create_player"], allowance: "1" },
   { id: COUNCIL_ID, role: "council", methods: ["council_update", "record_decision"], allowance: "1" },
-  ...HAULERS.map((h, i) => ({ id: h, role: `hauler-${i + 1}`, methods: ["register", "buy", "sell", "start_haul", "arrive", "raid", "record_decision"], allowance: "0.25" })),
+  ...HAULERS.map((h, i) => ({ id: h, role: `hauler-${i + 1}`, methods: ["register", "buy", "sell", "start_haul", "arrive", "raid", "record_decision", "turn"], allowance: "0.25" })),
+  { id: GUILD_ID, role: "guild", methods: ["buy", "sell", "start_haul", "arrive", "turn"], allowance: "0.25" },
 ];
 
 mkdirSync(FC_DIR, { recursive: true, mode: 0o700 });

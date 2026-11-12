@@ -10,7 +10,10 @@ export interface Decision {
   agent: string; name: string; ts: number; kind: string; summary: string; reasoning: string; model: string; mode: "tee" | "mock"; signatureKind: string; verified: boolean;
   attestationHash: string; completionId: string; decisionId: number | null; decisionTx: string; actionTx: string; error?: string;
 }
-export interface Npc { id: string; name: string; style: string; player: Player | null; balances: Record<string, number>; decisions: Decision[] }
+export interface Move { ts: number; text: string; txHash: string; ok: boolean }
+/** decisions = AI strategy reviews (anchored on-chain); moves = rule-based actions that follow the strategy */
+export interface Npc { id: string; name: string; kind?: "trader" | "guild"; style: string; player: Player | null; balances: Record<string, number>; decisions: Decision[]; moves?: Move[] }
+export const NPC_COLORS = ["#f5a524", "#c06cff", "#4cd98a", "#ff6b8b", "#e8e2c8"];
 export interface FeedItem { ts: number; actor: string; type: string; text: string; txHash?: string; ok?: boolean }
 export interface Params { travel_ticks: number[]; toll_gold: number[]; cargo_cap: number; tick_seconds: number; epoch_ticks: number; ambush_base_bps: number; ambush_per_raid_bps: number; ambush_max_bps: number; ambush_loss_bps: number; raider_loot_bps: number; raid_min_stake: number; raid_fee_bps: number; raid_ttl_ticks: number; npc_spread_bps: number; faucet_bps: number; [k: string]: any }
 export interface State {

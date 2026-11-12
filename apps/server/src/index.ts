@@ -2,13 +2,13 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { gini, runSim, COUNCIL_RULE, V02_NPCS } from "@lowsec/sim";
-import { AGENTS_ENABLED, CONTRACT_ID, COUNCIL_ID, COUNCIL_INTERVAL_MS, EXPLORER, HAULER_INTERVAL_MS, NETWORK, PORT, RELAYER_ID } from "./config.js";
+import { AGENTS_ENABLED, AGENTS_IDLE_PAUSE_MS, GUILD_ID, CONTRACT_ID, COUNCIL_ID, COUNCIL_INTERVAL_MS, EXPLORER, HAULER_INTERVAL_MS, NETWORK, PORT, RELAYER_ID } from "./config.js";
 import { account, accountExists, call, view } from "./chain.js";
 import { fcKey } from "./keys.js";
-import { decodeB64, relaySigned } from "./relayer.js";
+import { decodeB64, relaySigned, relayerPoolSize } from "./relayer.js";
 import { addPlayer, getFeed, knownPlayers, push } from "./feed.js";
 import { makeProvider, readAttestation } from "./nearai.js";
-import { Hauler, PERSONAS, lastDecisions } from "./agents/hauler.js";
+import { Hauler, PERSONAS, lastDecisions, lastMoves } from "./agents/hauler.js";
 import { Council, councilLog } from "./agents/council.js";
 import { GOODS, LANES, TOWNS, toSimParams, tradeOptions, type ChainParams, type Economy } from "./game.js";
 import { contractOfTheDay, cotdStatus, DEPOSIT_ORIGINS, intentsQuote, leaderboard, recordDelivery } from "./extras.js";
@@ -22,15 +22,24 @@ async function params(): Promise<ChainParams> {
 let genesisMs: number | null = null;
 const haulers = PERSONAS.map((p) => new Hauler(p, ai, params));
 const council = new Council(ai);
+const pilots = () => haulers.filter((h) => h.persona.kind === "trader");
+/** Agents only spend testnet gas while someone is looking (any /api poll in the last AGENTS_IDLE_PAUSE_MS). */
+let lastSeen = Date.now();
+const awake = () => AGENTS_IDLE_PAUSE_MS <= 0 || Date.now() - lastSeen < AGENTS_IDLE_PAUSE_MS;
 
 const app = new Hono();
 app.use("/api/*", cors());
+app.use("/api/*", async (c, next) => {
+  if (c.req.path !== "/api/health") lastSeen = Date.now();
+  await next();
+});
 
 app.get("/api/health", (c) =>
   c.json({
     network: NETWORK, contract: CONTRACT_ID, relayer: RELAYER_ID, council: COUNCIL_ID, explorer: EXPLORER,
     ai: { mode: ai.mode, model: ai.model, note: ai.mode === "mock" ? "MOCK MODE: set NEARAI_API_KEY to run NPCs on a NEAR AI Cloud TEE model with verified signatures" : "NEAR AI Cloud TEE; every decision verified with verifyResponse()" },
-    agents: { enabled: AGENTS_ENABLED, haulers: haulers.map((h) => ({ id: h.persona.id, name: h.persona.name, ready: h.ready })), council: council.ready },
+    agents: { enabled: AGENTS_ENABLED, awake: awake(), idlePauseMs: AGENTS_IDLE_PAUSE_MS, npcs: haulers.map((h) => ({ id: h.persona.id, name: h.persona.name, kind: h.persona.kind, ready: h.ready })), council: council.ready },
+    relayerKeys: relayerPoolSize(),
   }),
 );
 
@@ -47,7 +56,7 @@ app.get("/api/state", async (c) => {
   const npcs = await Promise.all(
     haulers.map(async (h) => {
       const [player, bal] = await Promise.all([view<any>("get_player", { account_id: h.persona.id }), view<string[]>("mt_batch_balance_of", { account_id: h.persona.id, token_ids: TOKENS })]);
-      return { id: h.persona.id, name: h.persona.name, style: h.persona.style, player, balances: Object.fromEntries(TOKENS.map((t, i) => [t, Number(bal[i])])), decisions: lastDecisions.get(h.persona.id) ?? [] };
+      return { id: h.persona.id, name: h.persona.name, kind: h.persona.kind, style: h.persona.style, player, balances: Object.fromEntries(TOKENS.map((t, i) => [t, Number(bal[i])])), decisions: lastDecisions.get(h.persona.id) ?? [], moves: lastMoves.get(h.persona.id) ?? [] };
     }),
   );
   return c.json({ economy: eco, params: prm, me, npcs, feed: getFeed(40), ai: { mode: ai.mode, model: ai.model }, genesisMs, contract: CONTRACT_ID, explorer: EXPLORER, serverTime: Date.now() });
@@ -57,7 +66,11 @@ app.get("/api/report", async (c) => {
   const eco = await view<Economy>("economy");
   const from = Math.max(0, eco.epoch - 60);
   const epochs = await view<any[]>("epochs", { from, limit: 60 });
-  const players = [...knownPlayers(), ...haulers.map((h) => h.persona.id)];
+  // Gini over pilots (humans + NPC traders); the Guild's float is an institution, not a player hoard (same as the sim)
+  const all = [...new Set([...knownPlayers(), ...pilots().map((h) => h.persona.id)])].filter((p) => p !== GUILD_ID);
+  // only accounts registered in the CURRENT contract state (older testnet resets leave stale names behind)
+  const reg = await Promise.all(all.map((p) => view<any>("get_player", { account_id: p }, 60_000).then((x) => !!x).catch(() => false)));
+  const players = all.filter((_, i) => reg[i]);
   const golds = await Promise.all(players.map((p) => view<string>("mt_balance_of", { account_id: p, token_id: "gold" }).then(Number).catch(() => 0)));
   return c.json({ economy: eco, epochs, gini: gini(golds), giniPlayers: players.length, council: councilLog, councilRule: COUNCIL_RULE, contract: CONTRACT_ID, explorer: EXPLORER });
 });
@@ -119,8 +132,8 @@ app.get("/api/feed", (c) => c.json(getFeed(100)));
 
 // ---------------------------------------------------------------- session goals
 app.get("/api/leaderboard", async (c) => {
-  const names = Object.fromEntries(haulers.map((h) => [h.persona.id, `${h.persona.name} (AI)`]));
-  const accounts = [...new Set([...knownPlayers(), ...haulers.map((h) => h.persona.id)])];
+  const names = Object.fromEntries(pilots().map((h) => [h.persona.id, `${h.persona.name} (AI)`]));
+  const accounts = [...new Set([...knownPlayers(), ...pilots().map((h) => h.persona.id)])].filter((p) => p !== GUILD_ID);
   return c.json(await leaderboard(accounts, names));
 });
 app.get("/api/contract-of-the-day", (c) => c.json(cotdStatus(c.req.query("account"))));
@@ -172,7 +185,7 @@ serve({ fetch: app.fetch, port: PORT }, () => {
 if (AGENTS_ENABLED) {
   const ready = haulers.filter((h) => h.ready);
   console.log(`[lowsec] agents: ${ready.map((h) => h.persona.name).join(", ") || "none (run setup-keys)"}; council ${council.ready ? "ready" : "missing key"}`);
-  ready.forEach((h, i) => setTimeout(() => setInterval(() => h.step(), HAULER_INTERVAL_MS), i * (HAULER_INTERVAL_MS / 2)));
-  setInterval(() => council.step(), COUNCIL_INTERVAL_MS);
+  ready.forEach((h, i) => setTimeout(() => setInterval(() => awake() && h.step(), HAULER_INTERVAL_MS), (i * HAULER_INTERVAL_MS) / ready.length));
+  setInterval(() => awake() && council.step(), COUNCIL_INTERVAL_MS);
   setTimeout(() => council.step(), 3000);
 }

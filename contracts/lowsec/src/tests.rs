@@ -406,3 +406,65 @@ fn the_rule_output_is_always_accepted_by_the_bound() {
         }
     }
 }
+
+#[test]
+fn guild_float_is_genesis_supply_and_exempt_from_dock_fee() {
+    let mut c = game(None);
+    ctx("owner.testnet", 1);
+    c.seed_guild(acc("guild.lowsec.testnet"), U128(30_000), Some("mina".into()));
+    assert_eq!(c.guild(), Some(acc("guild.lowsec.testnet")));
+    assert_eq!(gold(&c, "guild.lowsec.testnet"), 30_000);
+    assert_eq!(c.total.minted_guild_float, 30_000);
+    assert_eq!(c.player_count, 1);
+    // the Guild hauls like anyone (toll burned) but pays no docking fee on its float
+    ctx("guild.lowsec.testnet", 2);
+    c.start_haul("forja".into(), "safe".into(), None, 0);
+    ctx("guild.lowsec.testnet", 2 + c.params.tick_seconds * 4);
+    assert_eq!(c.arrive(None)["dock_fee"], "0");
+    assert_eq!(gold(&c, "guild.lowsec.testnet"), 30_000 - 12);
+    // the genesis epoch (supply_start = 0) never feeds the Council's signal
+    ctx("alice.testnet", c.params.tick_seconds * c.params.epoch_ticks * 2 + 1);
+    c.register(None);
+    assert_eq!(c.epochs(None, None)[0].supply_start, 0);
+}
+
+#[test]
+#[should_panic(expected = "only the owner")]
+fn only_owner_seats_the_guild() {
+    let mut c = game(None);
+    ctx("mallory.testnet", 1);
+    c.seed_guild(acc("mallory.testnet"), U128(1_000_000), None);
+}
+
+#[test]
+#[should_panic(expected = "genesis epoch")]
+fn guild_float_cannot_be_minted_after_genesis() {
+    let mut c = game(None);
+    ctx("owner.testnet", c.params.tick_seconds * c.params.epoch_ticks + 5);
+    c.seed_guild(acc("guild.lowsec.testnet"), U128(30_000), None);
+}
+
+#[test]
+#[should_panic(expected = "guild already seated")]
+fn guild_is_seated_once() {
+    let mut c = game(None);
+    ctx("owner.testnet", 1);
+    c.seed_guild(acc("guild.lowsec.testnet"), U128(30_000), None);
+    c.seed_guild(acc("guild2.lowsec.testnet"), U128(30_000), None);
+}
+
+#[test]
+fn turn_sells_buys_and_departs_in_one_call() {
+    let mut c = game(None);
+    ctx("alice.testnet", 1);
+    c.register(Some("mina".into()));
+    c.mint("parts", &acc("alice.testnet"), 5, "test");
+    let g0 = gold(&c, "alice.testnet");
+    let r = c.turn(Some("ore".into()), 10, Some("forja".into()), Some("safe".into()));
+    let sold: u128 = r["sold_for"].as_str().unwrap().parse().unwrap();
+    let cost: u128 = r["cost"].as_str().unwrap().parse().unwrap();
+    assert!(sold > 0 && cost > 0);
+    assert_eq!(gold(&c, "alice.testnet"), g0 + sold - cost - 12);
+    assert_eq!(c.mt_balance_of(acc("alice.testnet"), "parts".into()).0, 0);
+    assert!(c.get_player(acc("alice.testnet")).unwrap().haul.is_some());
+}

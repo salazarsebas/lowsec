@@ -29,7 +29,7 @@ export function Report() {
           <div className="kpi"><span>Sink / faucet</span><b>{minted ? (burned / minted).toFixed(2) : "–"}</b></div>
           <div className="kpi"><span>Cargo burned</span><b>{t.cargo_burned_units} units · {t.ambushes} ambushes</b></div>
           <div className="kpi"><span>Faucet multiplier</span><b>{e.faucet_bps / 100}%</b></div>
-          <div className="kpi"><span>Gini (gold)</span><b>{r.gini.toFixed(3)}</b><small className="muted">{r.giniPlayers} accounts</small></div>
+          <div className="kpi"><span>Gini (gold)</span><b>{r.gini.toFixed(3)}</b><small className="muted">{r.giniPlayers} pilots (Guild float excluded)</small></div>
           <div className="kpi"><span>Players</span><b>{e.players}</b></div>
         </div>
         <div className="cols">
@@ -38,6 +38,7 @@ export function Report() {
             <tbody>
               <tr><td>Town buy orders (you sell cargo)</td><td className="green">+{t.minted_npc_buy_orders}</td></tr>
               <tr><td>Starter grants</td><td className="green">+{t.minted_starter_grants}</td></tr>
+              {(t.minted_guild_float ?? 0) > 0 && <tr><td title="Minted once in the genesis epoch (seed_guild); genesis supply, never counted as inflation">The Guild's float (market maker, genesis only)</td><td className="muted">{Number(t.minted_guild_float).toLocaleString()}</td></tr>}
             </tbody>
           </table>
           <table className="ledger">
@@ -52,7 +53,7 @@ export function Report() {
         </div>
       </div>
       <div className="panel">
-        <h3>Gold growth per epoch vs 1% target <span className="muted small">(1 epoch = 4 min live; y-axis clipped at ±25%, ▲ marks the real value. With a handful of testnet pilots one sale swings an epoch, which is why the Council uses a 3-epoch mean and holds below 5 players)</span></h3>
+        <h3>Gold growth per epoch vs 1% target <span className="muted small">(1 epoch = 4 min live; y-axis clipped at ±25%, ▲ marks the real value. 4 AI traders + the Guild keep arbitrage margins thin; the Council uses a 3-epoch mean and holds below 5 players)</span></h3>
         <LineChart band={[0, 1]} clip={[-25, 25]} yFmt={(v) => `${v.toFixed(1)}%`} series={[
           { name: "inflation %", color: "#ff5c7a", values: ep.map((x) => x.inflation_bps / 100) },
           { name: "faucet % / 100", color: "#3ee6ff", values: ep.map((x) => x.faucet_bps / 10000), dashed: true },

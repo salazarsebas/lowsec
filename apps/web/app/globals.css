@@ -95,3 +95,5 @@ footer { margin-top:16px; }
 .signal { background:#0a0f18; border:1px solid var(--line); border-radius:8px; padding:8px; margin:8px 0; } .amber { color: var(--amber); font-weight:700; }
 .chart .clipped { font-size:9px; font-weight:700; }
 .council-entry.rejected { opacity:.55; }
+.badge.rule { background:#3a3424; color:#e8e2c8; border:1px solid #6b5f3a; }
+.tt-move { margin-top:4px; opacity:.85; }
