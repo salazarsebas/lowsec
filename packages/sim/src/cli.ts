@@ -22,7 +22,7 @@ function table(title: string, rows: PeriodMetrics[], label: string) {
   const head = [label, "players", "gold supply", "minted", "burned", "net", "inflation", "sink/faucet", "gini", "faucets", "hauls", "lowsec", "ambush", "cargo burned", "price idx"];
   const data = rows.map((m) => {
     const minted = m.minted.npc_buy_orders + m.minted.new_player_grant;
-    const burned = m.burned.npc_sell_orders + m.burned.tolls + m.burned.raid_fees;
+    const burned = m.burned.npc_sell_orders + m.burned.tolls + m.burned.raid_fees + m.burned.dock_fees;
     return [String(m.period + 1), String(m.players), n(m.supplyEnd), n(minted), n(burned), n(minted - burned), pct(m.inflationBps), m.sinkFaucetRatio.toFixed(3), m.gini.toFixed(3), pct(m.faucetBps), String(m.hauls), String(m.lowsecHauls), String(m.ambushes), String(m.cargoBurnedUnits), m.priceIndex.toFixed(2)];
   });
   const w = head.map((h, i) => Math.max(h.length, ...data.map((r) => r[i].length)));
@@ -45,6 +45,8 @@ function stats(r: SimResult) {
 
 const withCouncil = runSim({ weeks, seed, council: true });
 const baseline = has("no-baseline") ? null : runSim({ weeks, seed, council: false });
+// v0.1 rules: no Council AND no progressive docking fee (the "do nothing" economy)
+const original = has("no-baseline") ? null : runSim({ weeks, seed, council: false, params: { dockFeeBps: 0 } });
 
 console.log(`LOWSEC economy simulation — ${weeks} week(s), seed ${seed}, 1 tick = 1 game hour, epoch = 1 day`);
 console.log(`Council rule: ${COUNCIL_RULE}`);
@@ -61,7 +63,12 @@ if (baseline) {
   const red = 1 - s1.mae / s0.mae;
   const peak = (x: SimResult) => Math.max(...x.daily.slice(1).map((m) => m.inflationBps));
   console.log(`  peak day: council ${pct(peak(withCouncil))} vs baseline ${pct(peak(baseline))}; final Gini council ${withCouncil.final.gini.toFixed(3)} vs baseline ${baseline.final.gini.toFixed(3)}`);
-  console.log(`  => the Council cuts the inflation error by ${(red * 100).toFixed(1)}% (final faucet multiplier ${pct(withCouncil.final.faucetBps)})`);
+  console.log(`  => the Council cuts the inflation error by ${(red * 100).toFixed(1)}% vs no Council with the same sinks (final faucet multiplier ${pct(withCouncil.final.faucetBps)})`);
+  if (original) {
+    const s2 = stats(original);
+    console.log(`  v0.1 rules (no Council, no docking fee): mean |error| ${pct(s2.mae)}  peak ${pct(peak(original))}  Gini ${original.final.gini.toFixed(3)}  final supply ${n(original.final.supply)}`);
+    console.log(`  => Council + docking fee vs v0.1 rules: error ${((s1.mae / s2.mae - 1) * 100).toFixed(1)}%, Gini ${withCouncil.final.gini.toFixed(3)} vs ${original.final.gini.toFixed(3)}`);
+  }
 }
 const out = arg("json");
 if (out) {

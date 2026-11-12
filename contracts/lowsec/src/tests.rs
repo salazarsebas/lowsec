@@ -65,12 +65,25 @@ fn parity_with_typescript_sim() {
         assert_eq!(i, x["inflationBps"].as_i64().unwrap());
         assert_eq!(council_rule(&p, x["faucet"].as_u64().unwrap(), i), x["next"].as_u64().unwrap());
     }
+    for x in v["dock"].as_array().unwrap() {
+        assert_eq!(dock_fee(&p, x["gold"].as_u64().unwrap() as u128) as u64, x["fee"].as_u64().unwrap(), "dock {x}");
+    }
+    for x in v["windows"].as_array().unwrap() {
+        let w: Vec<(u128, u128, u64)> = x["window"].as_array().unwrap().iter().map(|e| (e[0].as_u64().unwrap() as u128, e[1].as_u64().unwrap() as u128, 1)).collect();
+        let n = w.len().min(p.council_window_epochs as usize);
+        assert_eq!(council_signal_bps(&w[w.len() - n..]), x["signal"].as_i64().unwrap(), "window {x}");
+    }
     // params are identical to the TS defaults
     let tp = &v["params"];
     assert_eq!(tp["targetStock"].as_u64().unwrap(), p.target_stock);
     assert_eq!(tp["reversionBps"].as_u64().unwrap(), p.reversion_bps);
     assert_eq!(tp["councilMinFaucetBps"].as_u64().unwrap(), p.council_min_faucet_bps);
     assert_eq!(tp["tollGold"]["lowsec"].as_u64().unwrap(), p.toll_gold[1]);
+    assert_eq!(tp["dockFeeBps"].as_u64().unwrap(), p.dock_fee_bps);
+    assert_eq!(tp["dockFeeExempt"].as_u64().unwrap(), p.dock_fee_exempt);
+    assert_eq!(tp["councilWindowEpochs"].as_u64().unwrap(), p.council_window_epochs);
+    assert_eq!(tp["councilMinPlayers"].as_u64().unwrap(), p.council_min_players);
+    assert_eq!(tp["councilScalesGrant"].as_bool().unwrap(), p.council_scales_grant);
 }
 
 #[test]
@@ -186,8 +199,19 @@ fn council_update_is_bounded_on_chain() {
     ctx("council.testnet", epoch_s + 1);
     assert_eq!(c.council_update(9_000, "h".into(), None), 9_000);
     assert_eq!(c.params.faucet_bps, 9_000);
-    // next epoch, a later new player's grant is scaled
+    // v0.2 default: the starter grant is NOT scaled (protects newcomers / Gini)
     ctx("bob.testnet", 2 * epoch_s + 1);
+    c.register(None);
+    assert_eq!(gold(&c, "bob.testnet"), 500);
+}
+
+#[test]
+fn grant_scaled_when_configured() {
+    let mut c = game(Some(Params { council_scales_grant: true, ..Params::default() }));
+    let epoch_s = c.params.tick_seconds * c.params.epoch_ticks;
+    ctx("council.testnet", epoch_s + 1);
+    c.council_update(9_000, "h".into(), None);
+    ctx("bob.testnet", epoch_s + 2);
     c.register(None);
     assert_eq!(gold(&c, "bob.testnet"), 450);
 }
@@ -219,7 +243,7 @@ fn council_once_per_epoch() {
 
 #[test]
 fn epochs_close_and_rule_is_public() {
-    let mut c = game(None);
+    let mut c = game(Some(Params { council_min_players: 0, council_window_epochs: 1, ..Params::default() }));
     ctx("alice.testnet", 1);
     c.register(None);
     let epoch_s = c.params.tick_seconds * c.params.epoch_ticks;
@@ -231,6 +255,65 @@ fn epochs_close_and_rule_is_public() {
     assert_eq!(e.len(), 2);
     assert_eq!(e[1].inflation_bps, 10_000);
     assert_eq!(c.rule_next_faucet_bps(), Some(9_000)); // way above target -> -10%
+    let sig = c.council_signal().unwrap();
+    assert_eq!((sig.signal_bps, sig.supply_start, sig.supply_end, sig.hold), (10_000, 500, 1_000, None));
+}
+
+#[test]
+fn council_holds_with_too_few_players() {
+    let mut c = game(None);
+    let epoch_s = c.params.tick_seconds * c.params.epoch_ticks;
+    ctx("alice.testnet", 1);
+    c.register(None);
+    ctx("bob.testnet", epoch_s + 1);
+    c.register(None);
+    ctx("carol.testnet", 2 * epoch_s + 1);
+    c.register(None);
+    let sig = c.council_signal().unwrap();
+    assert!(sig.hold.is_some(), "3 players < 5 must hold");
+    assert_eq!(c.rule_next_faucet_bps(), Some(10_000));
+}
+
+#[test]
+fn signal_is_mean_growth_over_window_and_idle_epochs_merge() {
+    let mut c = game(Some(Params { council_min_players: 0, ..Params::default() }));
+    let epoch_s = c.params.tick_seconds * c.params.epoch_ticks;
+    ctx("alice.testnet", 1);
+    c.register(None);
+    ctx("bob.testnet", epoch_s + 1);
+    c.register(None); // closes epoch 0 (0 -> 500)
+    // nobody plays for 3 epochs, then carol joins: one record spanning epochs 1..=3
+    ctx("carol.testnet", 4 * epoch_s + 1);
+    c.register(None);
+    let e = c.epochs(None, None);
+    assert_eq!(e.len(), 2);
+    assert_eq!(e[1].span, 3);
+    // bob's grant (500 -> 1000) is spread over the 3 epochs it covers, not counted as one +100% epoch
+    assert_eq!(e[1].inflation_bps, 3_333);
+    let sig = c.council_signal().unwrap();
+    assert_eq!(sig.epochs_covered, 4); // window 3 = both records, 1 + 3 epochs
+}
+
+#[test]
+fn dock_fee_burns_only_gold_above_exemption() {
+    let mut c = game(None);
+    ctx("alice.testnet", 1);
+    c.register(None);
+    // give alice 2400 gold: fee on arrival = 5% of (2400 - 400) = 100
+    c.mint(GOLD, &acc("alice.testnet"), 1_900, "test");
+    c.start_haul("forja".into(), "safe".into(), None, 0);
+    let after_toll = gold(&c, "alice.testnet");
+    ctx("alice.testnet", 1 + c.params.tick_seconds * 4);
+    let r = c.arrive(None);
+    assert_eq!(r["dock_fee"], ((after_toll - 400) * 500 / 10_000).to_string());
+    assert_eq!(gold(&c, "alice.testnet"), after_toll - (after_toll - 400) * 500 / 10_000);
+    assert_eq!(c.total.burned_dock_fees, (after_toll - 400) * 500 / 10_000);
+    // a newcomer pays almost nothing: 500 grant - 12 toll = 488 -> 5% of 88 = 4
+    ctx("bob.testnet", 2);
+    c.register(None);
+    c.start_haul("forja".into(), "safe".into(), None, 0);
+    ctx("bob.testnet", 2 + c.params.tick_seconds * 4);
+    assert_eq!(c.arrive(None)["dock_fee"], "4");
 }
 
 #[test]

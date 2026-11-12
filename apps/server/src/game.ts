@@ -7,14 +7,20 @@ export interface ChainParams {
   cargo_cap: number; ambush_base_bps: number; ambush_per_raid_bps: number; ambush_max_bps: number; ambush_loss_bps: number; raider_loot_bps: number;
   raid_min_stake: number; raid_fee_bps: number; raid_ttl_ticks: number; new_player_grant: number; epoch_ticks: number;
   council_target_inflation_bps: number; council_gain: number; council_max_step_bps: number; council_min_faucet_bps: number; council_max_faucet_bps: number; tick_seconds: number;
+  dock_fee_bps: number; dock_fee_exempt: number; council_window_epochs: number; council_min_players: number; council_scales_grant: boolean;
 }
 export interface Haul { id: number; from: number; to: number; route: number; good: number; qty: number; depart_tick: number; arrive_tick: number }
 export interface Player { town: number; haul: Haul | null; joined_tick: number; hauls: number; ambushed: number; raids_won: number }
 export interface Raid { raider: string; lane: number; stake: string | number; expires_tick: number }
 export interface Economy {
   tick: number; epoch: number; gold_supply: string | number; item_supply: (string | number)[]; players: number; faucet_bps: number; council: string; council_rule: string;
-  rule_next_faucet_bps: number | null; towns: { town: string; stock: number[]; ask: number[]; bid: number[] }[]; raids: Raid[];
+  rule_next_faucet_bps: number | null; council_signal: CouncilSignal | null; towns: { town: string; stock: number[]; ask: number[]; bid: number[] }[]; raids: Raid[];
   total: Record<string, number>; current_epoch: Record<string, number>; epoch_supply_start: string | number; decisions: number;
+}
+
+export interface CouncilSignal {
+  from_record: number; to_record: number; epochs_covered: number; supply_start: string | number; supply_end: string | number;
+  signal_bps: number; target_bps: number; players: number; hold: string | null; faucet_bps: number; next_faucet_bps: number;
 }
 
 export function toSimParams(c: ChainParams): Params {
@@ -28,6 +34,8 @@ export function toSimParams(c: ChainParams): Params {
     raidMinStake: c.raid_min_stake, raidFeeBps: c.raid_fee_bps, raidTtlTicks: c.raid_ttl_ticks, newPlayerGrant: c.new_player_grant, epochTicks: c.epoch_ticks,
     councilTargetInflationBps: c.council_target_inflation_bps, councilGain: c.council_gain, councilMaxStepBps: c.council_max_step_bps,
     councilMinFaucetBps: c.council_min_faucet_bps, councilMaxFaucetBps: c.council_max_faucet_bps,
+    dockFeeBps: c.dock_fee_bps ?? 0, dockFeeExempt: c.dock_fee_exempt ?? 0, councilWindowEpochs: c.council_window_epochs ?? 1,
+    councilMinPlayers: c.council_min_players ?? 0, councilScalesGrant: c.council_scales_grant ?? true,
   };
 }
 

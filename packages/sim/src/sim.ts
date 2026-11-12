@@ -5,8 +5,8 @@
  */
 import { DEFAULT_PARAMS, DEFAULT_POPULATION, GOODS, HOME_GOOD, TOWNS, type Good, type Params, type Population, type Route, type Town } from "./params.js";
 import { Rng } from "./rng.js";
-import { goalStock, revertStock, ambushChanceBps, ambushSplit, askPrice, bidPrice, buyCost, raidFee, sellPayout } from "./pricing.js";
-import { councilStep, inflationBps, perCapitaInflationBps, type CouncilDecision } from "./council.js";
+import { goalStock, revertStock, ambushChanceBps, ambushSplit, askPrice, bidPrice, buyCost, dockFee, raidFee, sellPayout } from "./pricing.js";
+import { councilDecide, councilSignalBps, inflationBps, perCapitaInflationBps, type CouncilDecision } from "./council.js";
 import { emptyPeriod, gini, type PeriodMetrics } from "./metrics.js";
 
 export type AgentKind = "safe" | "risky" | "raider" | "ai_hauler";
@@ -142,7 +142,7 @@ export class World {
     this.day.minted[src] += amt;
     this.week.minted[src] += amt;
   }
-  private burn(src: "npc_sell_orders" | "tolls" | "raid_fees", amt: number) {
+  private burn(src: "npc_sell_orders" | "tolls" | "raid_fees" | "dock_fees", amt: number) {
     this.day.burned[src] += amt;
     this.week.burned[src] += amt;
   }
@@ -255,6 +255,11 @@ export class World {
     const h = a.haul!;
     a.haul = null;
     a.town = h.to;
+    const fee = dockFee(this.p, a.gold);
+    if (fee > 0) {
+      a.gold -= fee;
+      this.burn("dock_fees", fee);
+    }
     if (h.qty === 0) return;
     if (h.route === "lowsec") {
       const lane = laneIndex(h.from, h.to);
@@ -309,7 +314,7 @@ export class World {
     m.inflationBps = inflationBps(m.supplyStart, m.supplyEnd);
     m.perCapitaInflationBps = perCapitaInflationBps(m.supplyStart, m.playersStart, m.supplyEnd, m.players);
     const minted = m.minted.npc_buy_orders + m.minted.new_player_grant;
-    const burned = m.burned.npc_sell_orders + m.burned.tolls + m.burned.raid_fees;
+    const burned = m.burned.npc_sell_orders + m.burned.tolls + m.burned.raid_fees + m.burned.dock_fees;
     m.sinkFaucetRatio = minted ? burned / minted : 0;
     m.gini = gini(this.agents.map((a) => a.gold));
     m.faucetBps = this.faucetBps;
@@ -338,8 +343,8 @@ export class World {
       this.daily.push(this.day);
       // Council acts on the day that just closed (skip day 0: opening grants are not inflation).
       if (this.councilOn) {
-        this.signalBps = this.day.period === 0 ? this.day.inflationBps : Math.trunc((this.day.inflationBps * this.p.councilSmoothingBps + this.signalBps * (10_000 - this.p.councilSmoothingBps)) / 10_000);
-        const d = councilStep(this.p, this.day.period, this.faucetBps, this.signalBps);
+        this.signalBps = councilSignalBps(this.daily, this.p.councilWindowEpochs);
+        const d = councilDecide(this.p, this.day.period, this.faucetBps, this.signalBps, this.agents.length);
         this.decisions.push(d);
         if (d.nextFaucetBps !== this.faucetBps)
           this.log("council", `Council epoch ${d.epoch}: inflation ${(d.inflationBps / 100).toFixed(2)}% vs target ${(d.targetBps / 100).toFixed(2)}% → faucets ${(d.prevFaucetBps / 100).toFixed(1)}% → ${(d.nextFaucetBps / 100).toFixed(1)}%`);

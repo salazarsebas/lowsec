@@ -11,7 +11,7 @@
 import type { Params } from "./params.js";
 
 export const COUNCIL_RULE =
-  "faucet_next = clamp(faucet × (1 − gain × (inflation − target)), ±10%/epoch, [70%, 110%])";
+  "faucet_next = clamp(faucet × (1 − gain × (inflation − target)), ±10%/epoch, [70%, 110%]); inflation = mean supply growth over the last 3 epochs; hold if < 5 players";
 
 export interface CouncilDecision {
   epoch: number;
@@ -20,6 +20,8 @@ export interface CouncilDecision {
   stepBps: number;
   prevFaucetBps: number;
   nextFaucetBps: number;
+  /** set when the Council holds instead of applying the rule (e.g. too few players for a meaningful signal) */
+  hold?: string;
 }
 
 export function inflationBps(supplyStart: number, supplyEnd: number): number {
@@ -46,4 +48,22 @@ export function perCapitaInflationBps(supplyStart: number, playersStart: number,
   if (supplyStart <= 0 || playersStart <= 0 || playersEnd <= 0) return 0;
   // (supplyEnd/playersEnd) / (supplyStart/playersStart) - 1
   return Math.trunc(((supplyEnd * playersStart - supplyStart * playersEnd) * 10_000) / (supplyStart * playersEnd));
+}
+
+/**
+ * The signal the Council reacts to: mean per-epoch supply growth over the last `window` closed epochs.
+ * `epochs` = [{supplyStart, supplyEnd}] oldest→newest. Integer math, mirrored on-chain (council_signal).
+ */
+export function councilSignalBps(epochs: { supplyStart: number; supplyEnd: number }[], window: number): number {
+  const w = epochs.slice(-Math.max(1, window));
+  if (!w.length) return 0;
+  return Math.trunc(inflationBps(w[0].supplyStart, w[w.length - 1].supplyEnd) / w.length);
+}
+
+/** Full council decision incl. the hold rule. */
+export function councilDecide(p: Params, epoch: number, faucetBps: number, signalBps: number, players: number): CouncilDecision {
+  if (players < p.councilMinPlayers) {
+    return { epoch, inflationBps: signalBps, targetBps: p.councilTargetInflationBps, stepBps: 0, prevFaucetBps: faucetBps, nextFaucetBps: faucetBps, hold: `only ${players} players (< ${p.councilMinPlayers}): signal too noisy` };
+  }
+  return councilStep(p, epoch, faucetBps, signalBps);
 }

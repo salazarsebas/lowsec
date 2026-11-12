@@ -11,7 +11,7 @@ export function gini(values: number[]): number {
 }
 
 export type Faucet = "npc_buy_orders" | "new_player_grant";
-export type Sink = "npc_sell_orders" | "tolls" | "raid_fees";
+export type Sink = "npc_sell_orders" | "tolls" | "raid_fees" | "dock_fees";
 
 export interface PeriodMetrics {
   period: number;
@@ -45,7 +45,7 @@ export function emptyPeriod(period: number, supplyStart: number, players: number
     supplyStart,
     supplyEnd: supplyStart,
     minted: { npc_buy_orders: 0, new_player_grant: 0 },
-    burned: { npc_sell_orders: 0, tolls: 0, raid_fees: 0 },
+    burned: { npc_sell_orders: 0, tolls: 0, raid_fees: 0, dock_fees: 0 },
     inflationBps: 0,
     perCapitaInflationBps: 0,
     playersStart: players,

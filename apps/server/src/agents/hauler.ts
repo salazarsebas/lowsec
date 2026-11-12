@@ -10,6 +10,7 @@ import { view } from "../chain.js";
 import { fcKey } from "../keys.js";
 import { metaCall } from "../relayer.js";
 import { push } from "../feed.js";
+import { recordDelivery } from "../extras.js";
 import { parseJsonReply, sha256, type InferenceProvider } from "../nearai.js";
 import { LANES, TOWNS, GOODS, toSimParams, tradeOptions, type ChainParams, type Economy, type Player, type TradeOption } from "../game.js";
 
@@ -114,7 +115,8 @@ export class Hauler {
       if (eco.tick >= player.haul.arrive_tick) {
         const r = await this.call("arrive", {});
         const v: any = r.value ?? {};
-        push({ actor: P.name, type: v.ambushed ? "ambush" : "arrive", text: v.ambushed ? `${P.name} was AMBUSHED on the way to ${v.town}: ${v.burned} burned, ${v.looted} looted` : `${P.name} arrived in ${v.town ?? TOWNS[player.haul.to]} with ${v.delivered ?? player.haul.qty} ${GOODS[player.haul.good]}`, txHash: r.txHash, ok: r.ok });
+        push({ actor: P.name, type: v.ambushed ? "ambush" : "arrive", text: v.ambushed ? `${P.name} was AMBUSHED on the way to ${v.town}: ${v.burned} ${GOODS[player.haul.good]} burned, ${v.looted} looted${v.raider ? ` by ${String(v.raider).split(".")[0]}` : " by pirates"}` : `${P.name} arrived in ${v.town ?? TOWNS[player.haul.to]} with ${v.delivered ?? player.haul.qty} ${GOODS[player.haul.good]}${Number(v.dock_fee) > 0 ? ` (docking fee ${v.dock_fee})` : ""}`, txHash: r.txHash, ok: r.ok });
+        if (r.ok && recordDelivery(P.id, GOODS[player.haul.good], v.town ?? TOWNS[player.haul.to], Number(v.delivered ?? 0))) push({ actor: P.name, type: "contract", text: `★ ${P.name} completed today's contract`, ok: true });
       }
       return;
     }

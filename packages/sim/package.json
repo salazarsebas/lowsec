@@ -13,7 +13,8 @@
     "sim": "tsx src/cli.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "vectors": "tsx src/vectors.ts"
+    "vectors": "tsx src/vectors.ts",
+    "sweep": "tsx src/sweep.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

@@ -71,7 +71,7 @@ describe("simulation", () => {
     const r = runSim({ weeks: 2, seed: 3, council: true });
     for (const w of r.weekly) {
       const minted = w.minted.npc_buy_orders + w.minted.new_player_grant;
-      const burned = w.burned.npc_sell_orders + w.burned.tolls + w.burned.raid_fees;
+      const burned = w.burned.npc_sell_orders + w.burned.tolls + w.burned.raid_fees + w.burned.dock_fees;
       expect(w.supplyEnd - w.supplyStart).toBe(minted - burned);
     }
   });
@@ -98,5 +98,28 @@ describe("simulation", () => {
       if (e(true) < e(false)) wins++;
     }
     expect(wins).toBeGreaterThanOrEqual(4);
+  });
+});
+
+describe("v0.2 economy", () => {
+  it("progressive docking fee: nothing under the exemption, 5% of the excess above it", async () => {
+    const { dockFee } = await import("../src/pricing.js");
+    const { DEFAULT_PARAMS: P } = await import("../src/params.js");
+    expect(dockFee(P, 400)).toBe(0);
+    expect(dockFee(P, 2400)).toBe(100);
+  });
+  it("council holds when there are too few players", async () => {
+    const { councilDecide } = await import("../src/council.js");
+    const { DEFAULT_PARAMS: P } = await import("../src/params.js");
+    const d = councilDecide(P, 1, 10_000, 5_000, 3);
+    expect(d.hold).toBeTruthy();
+    expect(d.nextFaucetBps).toBe(10_000);
+  });
+  it("seed 42: Council + dock fee beats no-Council on error without raising Gini", () => {
+    const err = (r: ReturnType<typeof runSim>) => r.daily.slice(1).reduce((a, m) => a + Math.abs(m.inflationBps - 100), 0);
+    const c = runSim({ weeks: 4, seed: 42, council: true });
+    const b = runSim({ weeks: 4, seed: 42, council: false, params: { dockFeeBps: 0 } });
+    expect(err(c)).toBeLessThan(err(b));
+    expect(c.final.gini).toBeLessThanOrEqual(b.final.gini);
   });
 });

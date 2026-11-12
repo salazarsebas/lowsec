@@ -32,6 +32,8 @@
   "raidMinStake": 100,
   "raidFeeBps": 1000,
   "raidTtlTicks": 24,
+  "dockFeeBps": 500,
+  "dockFeeExempt": 400,
   "newPlayerGrant": 500,
   "epochTicks": 24,
   "councilTargetInflationBps": 100,
@@ -39,8 +41,9 @@
   "councilMaxStepBps": 1000,
   "councilMinFaucetBps": 7000,
   "councilMaxFaucetBps": 11000,
-  "councilSmoothingBps": 10000,
-  "councilScalesGrant": true,
+  "councilWindowEpochs": 3,
+  "councilMinPlayers": 5,
+  "councilScalesGrant": false,
   "ticksPerWeek": 168
  },
  "price": [
@@ -1487,6 +1490,98 @@
    "supplyEnd": 121300,
    "inflationBps": 108,
    "next": 8486
+  }
+ ],
+ "dock": [
+  {
+   "gold": 0,
+   "fee": 0
+  },
+  {
+   "gold": 100,
+   "fee": 0
+  },
+  {
+   "gold": 400,
+   "fee": 0
+  },
+  {
+   "gold": 401,
+   "fee": 0
+  },
+  {
+   "gold": 999,
+   "fee": 29
+  },
+  {
+   "gold": 1000,
+   "fee": 30
+  },
+  {
+   "gold": 5000,
+   "fee": 230
+  },
+  {
+   "gold": 123456,
+   "fee": 6152
+  }
+ ],
+ "windows": [
+  {
+   "window": [
+    [
+     100000,
+     103000
+    ]
+   ],
+   "signal": 300
+  },
+  {
+   "window": [
+    [
+     100000,
+     103000
+    ],
+    [
+     103000,
+     101000
+    ],
+    [
+     101000,
+     104000
+    ]
+   ],
+   "signal": 133
+  },
+  {
+   "window": [
+    [
+     5000,
+     40000
+    ],
+    [
+     40000,
+     40100
+    ],
+    [
+     40100,
+     40200
+    ]
+   ],
+   "signal": 23466
+  },
+  {
+   "window": [
+    [
+     50000,
+     49000
+    ],
+    [
+     49000,
+     48500
+    ]
+   ],
+   "signal": -150
   }
  ]
 }

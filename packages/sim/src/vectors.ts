@@ -1,8 +1,8 @@
 /** Generates test vectors that the Rust contract must reproduce exactly (parity test). */
 import { writeFileSync } from "node:fs";
 import { DEFAULT_PARAMS as P, GOODS } from "./params.js";
-import { askPrice, bidPrice, buyCost, sellPayout, ambushChanceBps, ambushSplit, raidFee, revertStock, goalStock } from "./pricing.js";
-import { councilStep, inflationBps } from "./council.js";
+import { askPrice, bidPrice, buyCost, sellPayout, ambushChanceBps, ambushSplit, raidFee, revertStock, goalStock, dockFee } from "./pricing.js";
+import { councilSignalBps, councilStep, inflationBps } from "./council.js";
 
 export function makeVectors() {
   const stocks = [0, 1, 7, 50, 100, 199, 200, 201, 400, 799, 1600];
@@ -24,7 +24,14 @@ export function makeVectors() {
     [10_900, 80_000, 80_100],
     [8_500, 120_000, 121_300],
   ].map(([f, a, b], i) => ({ faucet: f, supplyStart: a, supplyEnd: b, inflationBps: inflationBps(a, b), next: councilStep(P, i, f, inflationBps(a, b)).nextFaucetBps }));
-  return { params: P, price, ambush, split, fees, revert, council };
+  const dock = [0, 100, 400, 401, 999, 1000, 5000, 123456].map((g) => ({ gold: g, fee: dockFee(P, g) }));
+  const windows = [
+    [[100_000, 103_000]],
+    [[100_000, 103_000], [103_000, 101_000], [101_000, 104_000]],
+    [[5_000, 40_000], [40_000, 40_100], [40_100, 40_200]],
+    [[50_000, 49_000], [49_000, 48_500]],
+  ].map((w) => ({ window: w, signal: councilSignalBps(w.map(([a, b]) => ({ supplyStart: a, supplyEnd: b })), P.councilWindowEpochs) }));
+  return { params: P, price, ambush, split, fees, revert, council, dock, windows };
 }
 
 if (process.argv[1]?.endsWith("vectors.ts")) {

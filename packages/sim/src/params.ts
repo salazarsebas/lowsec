@@ -64,6 +64,10 @@ export interface Params {
   raidFeeBps: number; // burned when the raid is posted (sink)
   raidTtlTicks: number; // stake returned (minus fee) if no convoy is hit
 
+  /** Progressive sink: docking fee on every arrival = dockFeeBps of the pilot's gold ABOVE dockFeeExempt (burned). */
+  dockFeeBps: number;
+  dockFeeExempt: number;
+
   /** Starter grant for a new player (faucet, scaled by faucetBps). */
   newPlayerGrant: number;
 
@@ -74,8 +78,10 @@ export interface Params {
   councilMaxStepBps: number; // ±10% per epoch, ALSO enforced on-chain
   councilMinFaucetBps: number;
   councilMaxFaucetBps: number;
-  /** EMA weight (bps) of the newest epoch in the inflation signal the Council reacts to. 10000 = no smoothing. */
-  councilSmoothingBps: number;
+  /** The Council reacts to mean supply growth over the last N closed epochs (1 = last epoch only). */
+  councilWindowEpochs: number;
+  /** Below this many registered players the signal is noise (one sale swings it): the Council HOLDS. */
+  councilMinPlayers: number;
   /** If false, the starter grant is NOT scaled by the Council (protects newcomers / Gini). */
   councilScalesGrant: boolean;
 
@@ -109,6 +115,9 @@ export const DEFAULT_PARAMS: Params = {
   raidFeeBps: 1_000,
   raidTtlTicks: 24,
 
+  dockFeeBps: 500,
+  dockFeeExempt: 400,
+
   newPlayerGrant: 500,
 
   epochTicks: 24,
@@ -117,8 +126,9 @@ export const DEFAULT_PARAMS: Params = {
   councilMaxStepBps: 1_000,
   councilMinFaucetBps: 7_000,
   councilMaxFaucetBps: 11_000,
-  councilSmoothingBps: 10_000,
-  councilScalesGrant: true,
+  councilWindowEpochs: 3,
+  councilMinPlayers: 5,
+  councilScalesGrant: false,
 
   ticksPerWeek: 168,
 };

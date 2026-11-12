@@ -8,6 +8,7 @@ pub const TOWNS: [&str; 3] = ["mina", "forja", "puerto"];
 pub const GOLD: &str = "gold";
 pub const SAFE: u8 = 0;
 pub const LOWSEC: u8 = 1;
+pub const LANES: [&str; 3] = ["mina-forja", "forja-puerto", "mina-puerto"];
 
 #[near(serializers = [borsh, json])]
 #[derive(Clone, Debug, PartialEq)]
@@ -45,6 +46,15 @@ pub struct Params {
     pub council_max_faucet_bps: u64,
     /// real seconds per game tick (1 game hour) on-chain
     pub tick_seconds: u64,
+    /// Progressive sink: on every arrival, dock_fee_bps of the pilot's gold above dock_fee_exempt is burned
+    pub dock_fee_bps: u64,
+    pub dock_fee_exempt: u64,
+    /// The Council reacts to mean supply growth over the last N closed epochs (robust to one big sale)
+    pub council_window_epochs: u64,
+    /// Below this many players the signal is noise: the rule HOLDS the faucet
+    pub council_min_players: u64,
+    /// Whether the starter grant is scaled by the Council (false protects newcomers / Gini)
+    pub council_scales_grant: bool,
 }
 
 impl Default for Params {
@@ -79,6 +89,11 @@ impl Default for Params {
             council_min_faucet_bps: 7_000,
             council_max_faucet_bps: 11_000,
             tick_seconds: 10,
+            dock_fee_bps: 500,
+            dock_fee_exempt: 400,
+            council_window_epochs: 3,
+            council_min_players: 5,
+            council_scales_grant: false,
         }
     }
 }
@@ -152,6 +167,25 @@ pub fn council_rule(p: &Params, faucet_bps: u64, infl_bps: i64) -> u64 {
     let step = (-(err * p.council_gain)).max(-max).min(max);
     let next = (faucet_bps as i128 * (BPS + step as i128) / BPS) as u64;
     next.max(p.council_min_faucet_bps).min(p.council_max_faucet_bps)
+}
+
+/// Progressive docking fee (burned): dock_fee_bps of the gold held above dock_fee_exempt.
+pub fn dock_fee(p: &Params, gold: u128) -> u128 {
+    let ex = p.dock_fee_exempt as u128;
+    if p.dock_fee_bps == 0 || gold <= ex {
+        return 0;
+    }
+    (gold - ex) * p.dock_fee_bps as u128 / 10_000
+}
+
+/// Council signal: mean per-epoch supply growth over a window of closed epochs
+/// (first.supply_start → last.supply_end, divided by the number of epochs covered).
+pub fn council_signal_bps(window: &[(u128, u128, u64)]) -> i64 {
+    if window.is_empty() {
+        return 0;
+    }
+    let span: u64 = window.iter().map(|w| w.2.max(1)).sum();
+    inflation_bps(window[0].0, window[window.len() - 1].1) / span.max(1) as i64
 }
 
 /// On-chain bound: |next - prev| <= prev * max_step

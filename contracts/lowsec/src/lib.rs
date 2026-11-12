@@ -66,6 +66,7 @@ pub struct Ledger {
     pub lowsec_hauls: u64,
     pub ambushes: u64,
     pub raids: u64,
+    pub burned_dock_fees: u128,
 }
 
 #[near(serializers = [borsh, json])]
@@ -76,9 +77,32 @@ pub struct EpochRecord {
     pub supply_end: u128,
     pub players_start: u64,
     pub players_end: u64,
+    /// mean growth per epoch over the record (supply_end vs supply_start, divided by `span`)
     pub inflation_bps: i64,
     pub faucet_bps: u64,
     pub ledger: Ledger,
+    /// epochs covered: >1 when nobody touched the contract for a while (idle epochs are merged)
+    pub span: u64,
+}
+
+/// What the public rule says right now, and the exact inputs it used.
+#[near(serializers = [json])]
+#[derive(Clone, Debug)]
+pub struct CouncilSignal {
+    /// closed epochs used (oldest..=newest record index)
+    pub from_record: u64,
+    pub to_record: u64,
+    pub epochs_covered: u64,
+    pub supply_start: u128,
+    pub supply_end: u128,
+    /// mean gold-supply growth per epoch over the window, in bps
+    pub signal_bps: i64,
+    pub target_bps: i64,
+    pub players: u64,
+    /// Some(reason) when the Council must hold (too few players for a meaningful signal)
+    pub hold: Option<String>,
+    pub faucet_bps: u64,
+    pub next_faucet_bps: u64,
 }
 
 #[near(serializers = [borsh, json])]
@@ -148,6 +172,7 @@ pub struct Economy {
     pub council: AccountId,
     pub council_rule: String,
     pub rule_next_faucet_bps: Option<u64>,
+    pub council_signal: Option<CouncilSignal>,
     pub towns: Vec<TownView>,
     pub raids: Vec<Raid>,
     pub total: Ledger,
@@ -161,7 +186,7 @@ pub const PLAYER_METHODS: &str = "register,buy,sell,start_haul,arrive,raid";
 /// NEAR given to a new player sub-account for its own storage (gas is paid by the relayer via NEP-366).
 pub const PLAYER_FUNDING: NearToken = NearToken::from_millinear(10);
 
-pub const COUNCIL_RULE: &str = "faucet_next = clamp(faucet × (1 − gain × (inflation − target)), ±10%/epoch, [70%, 110%])";
+pub const COUNCIL_RULE: &str = "faucet_next = clamp(faucet × (1 − gain × (inflation − target)), ±10%/epoch, [70%, 110%]); inflation = mean supply growth over the last 3 epochs; hold if < 5 players";
 
 #[near]
 impl Lowsec {
@@ -180,24 +205,33 @@ impl Lowsec {
             council,
             params,
             genesis_ms: env::block_timestamp_ms(),
-            balances: LookupMap::new(b"b"),
+            balances: LookupMap::new(b"b2".to_vec()),
             supply: BTreeMap::new(),
-            players: LookupMap::new(b"p"),
+            players: LookupMap::new(b"p2".to_vec()),
             player_count: 0,
             stock,
             stock_tick: 0,
             raids: vec![],
             next_haul_id: 0,
-            agents: LookupSet::new(b"a"),
+            agents: LookupSet::new(b"a2".to_vec()),
             total: Ledger::default(),
             epoch: 0,
             epoch_supply_start: 0,
             epoch_players_start: 0,
             epoch_ledger: Ledger::default(),
-            epochs: Vector::new(b"e"),
+            epochs: Vector::new(b"e2".to_vec()),
             last_council_epoch: None,
-            decisions: Vector::new(b"d"),
+            decisions: Vector::new(b"d2".to_vec()),
         }
+    }
+
+    /// v0.2 state reset (testnet): the v0.1 history stays on the explorer; new state uses new storage prefixes.
+    /// #[private] + explicit check: only the contract account itself can call it.
+    #[init(ignore_state)]
+    #[private]
+    pub fn reset_v2(owner: AccountId, council: AccountId, params: Option<Params>) -> Self {
+        require!(env::predecessor_account_id() == env::current_account_id(), "only the contract account");
+        Self::new(owner, council, params)
     }
 
     // ---------------------------------------------------------------- onboarding
@@ -229,7 +263,7 @@ impl Lowsec {
         let p = Player { town, haul: None, joined_tick: self.now_tick(), hauls: 0, ambushed: 0, raids_won: 0 };
         self.players.insert(who.clone(), p.clone());
         self.player_count += 1;
-        let grant = self.params.new_player_grant as u128 * self.params.faucet_bps as u128 / 10_000;
+        let grant = if self.params.council_scales_grant { self.params.new_player_grant as u128 * self.params.faucet_bps as u128 / 10_000 } else { self.params.new_player_grant as u128 };
         self.mint(GOLD, &who, grant, "starter_grant");
         self.total.minted_starter_grants += grant;
         self.epoch_ledger.minted_starter_grants += grant;
@@ -330,9 +364,16 @@ impl Lowsec {
         require!(now >= h.arrive_tick, format!("still travelling: arrives at tick {}, now {}", h.arrive_tick, now));
         let me = env::current_account_id();
         let good = GOODS[h.good as usize];
-        let mut result = json!({ "account_id": who, "haul_id": h.id, "town": TOWNS[h.to as usize], "ambushed": false, "delivered": h.qty });
+        let mut result = json!({ "account_id": who, "haul_id": h.id, "town": TOWNS[h.to as usize], "ambushed": false, "delivered": h.qty, "dock_fee": "0" });
         p.town = h.to;
         p.haul = None;
+        // progressive docking fee: only gold above the exemption is taxed (burned)
+        let fee = dock_fee(&self.params, self.bal(GOLD, &who));
+        if fee > 0 {
+            self.burn(GOLD, &who, fee, "dock_fee");
+            self.total.burned_dock_fees += fee;
+            self.epoch_ledger.burned_dock_fees += fee;
+        }
         if h.qty > 0 {
             p.hauls += 1;
             let mut delivered = h.qty;
@@ -362,12 +403,13 @@ impl Lowsec {
                     self.total.cargo_burned_units += burned;
                     self.epoch_ledger.cargo_burned_units += burned;
                     delivered = kept;
-                    result = json!({ "account_id": who, "haul_id": h.id, "town": TOWNS[h.to as usize], "ambushed": true, "roll": roll, "chance_bps": chance, "burned": burned, "looted": looted, "delivered": kept, "raider": raider_id });
+                    result = json!({ "account_id": who, "haul_id": h.id, "town": TOWNS[h.to as usize], "ambushed": true, "roll": roll, "chance_bps": chance, "burned": burned, "looted": looted, "delivered": kept, "raider": raider_id, "good": good, "lane": LANES[lane as usize] });
                     events::game("ambush", result.clone());
                 }
             }
             self.internal_transfer(&me, &who, good, delivered as u128, Some("haul_delivered"));
         }
+        result["dock_fee"] = json!(fee.to_string());
         self.players.insert(who.clone(), p);
         events::game("haul_arrived", result.clone());
         result
@@ -490,11 +532,36 @@ impl Lowsec {
 
     /// What the public rule says the faucet should be, from the last closed epoch.
     pub fn rule_next_faucet_bps(&self) -> Option<u64> {
-        if self.epochs.is_empty() {
+        self.council_signal().map(|s| s.next_faucet_bps)
+    }
+
+    /// The rule's exact inputs and output (what the Council explains). None before the first epoch closes.
+    pub fn council_signal(&self) -> Option<CouncilSignal> {
+        let n = self.epochs.len() as u64;
+        if n == 0 {
             return None;
         }
-        let last = self.epochs.get(self.epochs.len() - 1).unwrap();
-        Some(council_rule(&self.params, self.params.faucet_bps, last.inflation_bps))
+        let w = self.params.council_window_epochs.max(1).min(n);
+        let recs: Vec<&EpochRecord> = ((n - w)..n).map(|i| self.epochs.get(i as u32).unwrap()).collect();
+        let window: Vec<(u128, u128, u64)> = recs.iter().map(|r| (r.supply_start, r.supply_end, r.span)).collect();
+        let signal = council_signal_bps(&window);
+        let players = recs[recs.len() - 1].players_end;
+        let faucet = self.params.faucet_bps;
+        let hold = if players < self.params.council_min_players { Some(format!("only {} players (< {}): signal too noisy, holding", players, self.params.council_min_players)) } else { None };
+        let next = if hold.is_some() { faucet } else { council_rule(&self.params, faucet, signal) };
+        Some(CouncilSignal {
+            from_record: n - w,
+            to_record: n - 1,
+            epochs_covered: window.iter().map(|x| x.2.max(1)).sum(),
+            supply_start: window[0].0,
+            supply_end: window[window.len() - 1].1,
+            signal_bps: signal,
+            target_bps: self.params.council_target_inflation_bps,
+            players,
+            hold,
+            faucet_bps: faucet,
+            next_faucet_bps: next,
+        })
     }
 
     pub fn economy(&self) -> Economy {
@@ -517,6 +584,7 @@ impl Lowsec {
             council: self.council.clone(),
             council_rule: COUNCIL_RULE.to_string(),
             rule_next_faucet_bps: self.rule_next_faucet_bps(),
+            council_signal: self.council_signal(),
             towns,
             raids: self.raids.clone(),
             total: self.total.clone(),
@@ -592,15 +660,17 @@ impl Lowsec {
         let e = now / self.params.epoch_ticks.max(1);
         if e > self.epoch {
             let supply_end = self.supply.get(GOLD).copied().unwrap_or(0);
+            let span = e - self.epoch;
             let rec = EpochRecord {
                 epoch: self.epoch,
                 supply_start: self.epoch_supply_start,
                 supply_end,
                 players_start: self.epoch_players_start,
                 players_end: self.player_count,
-                inflation_bps: inflation_bps(self.epoch_supply_start, supply_end),
+                inflation_bps: inflation_bps(self.epoch_supply_start, supply_end) / span as i64,
                 faucet_bps: self.params.faucet_bps,
                 ledger: std::mem::take(&mut self.epoch_ledger),
+                span,
             };
             events::game("epoch_closed", json!({ "record": rec }));
             self.epochs.push(rec);

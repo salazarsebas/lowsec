@@ -10,7 +10,8 @@ import { addPlayer, getFeed, knownPlayers, push } from "./feed.js";
 import { makeProvider, readAttestation } from "./nearai.js";
 import { Hauler, PERSONAS, lastDecisions } from "./agents/hauler.js";
 import { Council, councilLog } from "./agents/council.js";
-import { GOODS, TOWNS, type ChainParams, type Economy } from "./game.js";
+import { GOODS, LANES, TOWNS, toSimParams, tradeOptions, type ChainParams, type Economy } from "./game.js";
+import { contractOfTheDay, cotdStatus, DEPOSIT_ORIGINS, intentsQuote, leaderboard, recordDelivery } from "./extras.js";
 
 const ai = makeProvider();
 let paramsCache: { at: number; v: ChainParams } | null = null;
@@ -84,6 +85,9 @@ app.post("/api/relay", async (c) => {
   } catch {
     return c.json({ error: "bad signedDelegate" }, 400);
   }
+  const sender0 = (sd as any).delegateAction.senderId as string;
+  const method0 = (sd as any).delegateAction.actions?.[0]?.functionCall?.methodName;
+  const before = method0 === "arrive" ? await view<any>("get_player", { account_id: sender0 }).catch(() => null) : null;
   const r = await relaySigned(sd);
   const sender = (sd as any).delegateAction.senderId as string;
   const method = (sd as any).delegateAction.actions?.[0]?.functionCall?.methodName;
@@ -91,7 +95,11 @@ app.post("/api/relay", async (c) => {
   const v: any = r.value;
   let text = label ?? `${short} → ${method}`;
   if (method === "arrive" && v) text = v.ambushed ? `${short} was AMBUSHED: ${v.burned} burned, ${v.looted} looted${v.raider ? ` by ${String(v.raider).split(".")[0]}` : " by pirates"}` : `${short} arrived in ${v.town} with ${v.delivered}`;
+  if (method === "arrive" && v && Number(v.dock_fee) > 0) text += ` (docking fee ${v.dock_fee} burned)`;
   push({ actor: short, type: method === "arrive" && v?.ambushed ? "ambush" : method, text: r.ok ? text : `${text} failed: ${r.error}`, txHash: r.txHash, ok: r.ok });
+  if (r.ok && method === "arrive" && v && before?.haul) {
+    if (recordDelivery(sender, GOODS[before.haul.good], v.town, Number(v.delivered))) push({ actor: short, type: "contract", text: `★ ${short} completed today's contract: ${cotdStatus().text}`, ok: true });
+  }
   return c.json(r, r.ok ? 200 : 400);
 });
 
@@ -104,10 +112,57 @@ app.post("/api/sim", async (c) => {
   const { weeks = 1, seed = 42 } = await c.req.json<{ weeks?: number; seed?: number }>().catch(() => ({}) as any);
   const w = Math.min(Math.max(Number(weeks) || 1, 1), 8);
   const pick = (r: ReturnType<typeof runSim>) => ({ daily: r.daily.map((d) => ({ day: d.period + 1, inflationBps: d.inflationBps, supply: d.supplyEnd, faucetBps: d.faucetBps, gini: d.gini, minted: d.minted, burned: d.burned, ambushes: d.ambushes, cargoBurned: d.cargoBurnedUnits, players: d.players })), final: r.final, events: r.events.filter((e) => e.type !== "haul").slice(-12) });
-  return c.json({ weeks: w, seed, rule: COUNCIL_RULE, council: pick(runSim({ weeks: w, seed, council: true })), baseline: pick(runSim({ weeks: w, seed, council: false })) });
+  return c.json({ weeks: w, seed, rule: COUNCIL_RULE, council: pick(runSim({ weeks: w, seed, council: true })), baseline: pick(runSim({ weeks: w, seed, council: false })), original: pick(runSim({ weeks: w, seed, council: false, params: { dockFeeBps: 0 } })) });
 });
 
 app.get("/api/feed", (c) => c.json(getFeed(100)));
+
+// ---------------------------------------------------------------- session goals
+app.get("/api/leaderboard", async (c) => {
+  const names = Object.fromEntries(haulers.map((h) => [h.persona.id, `${h.persona.name} (AI)`]));
+  const accounts = [...new Set([...knownPlayers(), ...haulers.map((h) => h.persona.id)])];
+  return c.json(await leaderboard(accounts, names));
+});
+app.get("/api/contract-of-the-day", (c) => c.json(cotdStatus(c.req.query("account"))));
+
+// ---------------------------------------------------------------- NEAR Intents (quote only)
+app.get("/api/intents/origins", (c) => c.json(Object.entries(DEPOSIT_ORIGINS).map(([id, o]) => ({ id, label: o.label }))));
+app.post("/api/intents/quote", async (c) => {
+  const { origin = "usdc-base", amount = "10", recipient } = await c.req.json<{ origin?: string; amount?: string; recipient?: string }>().catch(() => ({}) as any);
+  try {
+    return c.json(await intentsQuote(origin, String(amount), recipient && /^[a-z0-9._-]+\.near$/.test(recipient) ? recipient : undefined));
+  } catch (e: any) {
+    return c.json({ quoteOnly: true, error: String(e?.message ?? e) }, 502);
+  }
+});
+
+// ---------------------------------------------------------------- open agent API
+/** Everything an external agent needs to decide, priced with the contract's own rules. It then signs its OWN tx. */
+app.get("/api/agent/observe", async (c) => {
+  const acc = c.req.query("account");
+  const [eco, prm] = await Promise.all([view<Economy>("economy"), params()]);
+  const player = acc ? await view<any>("get_player", { account_id: acc }) : null;
+  const gold = acc ? Number(await view<string>("mt_balance_of", { account_id: acc, token_id: "gold" })) : 0;
+  const inv = acc ? (await view<string[]>("mt_batch_balance_of", { account_id: acc, token_ids: [...GOODS] })).map(Number) : [0, 0, 0];
+  const options = player && !player.haul ? tradeOptions(toSimParams(prm), eco, player.town, gold).filter((o) => o.expectedProfit > 0).slice(0, 6) : [];
+  return c.json({
+    contract: CONTRACT_ID,
+    tick: eco.tick,
+    you: player ? { account: acc, town: TOWNS[player.town], gold, cargo: Object.fromEntries(GOODS.map((g, i) => [g, inv[i]])), haul: player.haul } : null,
+    options,
+    raids: eco.raids.map((r) => ({ lane: LANES[r.lane], expiresTick: r.expires_tick })),
+    council: eco.council_signal,
+    methods: {
+      register: { args: { town: "mina|forja|puerto" } },
+      buy: { args: { good: "ore|parts|fuel", qty: "1..25" } },
+      sell: { args: { good: "ore|parts|fuel", qty: "n" } },
+      start_haul: { args: { to: "town", route: "safe|lowsec", good: "ore|parts|fuel", qty: "n" } },
+      arrive: { args: {} },
+      raid: { args: { lane: "mina-forja|forja-puerto|mina-puerto", stake: "\"100\"" } },
+    },
+    docs: "examples/external-agent.mjs",
+  });
+});
 
 serve({ fetch: app.fetch, port: PORT }, () => {
   console.log(`[lowsec] server on http://localhost:${PORT}  contract=${CONTRACT_ID}  AI=${ai.mode} (${ai.model})`);

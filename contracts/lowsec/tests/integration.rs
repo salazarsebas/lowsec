@@ -24,7 +24,8 @@ async fn full_loop_on_sandbox() -> anyhow::Result<()> {
         "ambush_loss_bps": 5000, "raider_loot_bps": 2000, "raid_min_stake": 100, "raid_fee_bps": 1000,
         "raid_ttl_ticks": 600, "new_player_grant": 500, "epoch_ticks": 5,
         "council_target_inflation_bps": 100, "council_gain": 2, "council_max_step_bps": 1000,
-        "council_min_faucet_bps": 7000, "council_max_faucet_bps": 11000, "tick_seconds": TICK
+        "council_min_faucet_bps": 7000, "council_max_faucet_bps": 11000, "tick_seconds": TICK,
+        "dock_fee_bps": 0, "dock_fee_exempt": 400, "council_window_epochs": 3, "council_min_players": 0, "council_scales_grant": false
     });
     contract
         .call("new")

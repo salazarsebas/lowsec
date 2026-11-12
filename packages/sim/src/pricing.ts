@@ -57,3 +57,9 @@ export function revertStock(p: Params, stock: number, goal: number): number {
   if (d === 0) d = goal > stock ? 1 : -1;
   return Math.min(Math.max(stock + d, 1), p.targetStock * p.maxStockFactor);
 }
+
+/** Progressive docking fee (burned): dockFeeBps of the gold held above dockFeeExempt. Rich pilots pay, newcomers don't. */
+export function dockFee(p: Params, gold: number): number {
+  if (p.dockFeeBps <= 0 || gold <= p.dockFeeExempt) return 0;
+  return Math.floor(((gold - p.dockFeeExempt) * p.dockFeeBps) / 10_000);
+}
