@@ -40,7 +40,7 @@ export function councilStep(p: Params, epoch: number, faucetBps: number, inflBps
 
 /** Same bound the contract enforces: |next - prev| <= prev * maxStep. */
 export function withinBound(prev: number, next: number, maxStepBps: number): boolean {
-  return Math.abs(next - prev) * 10_000 <= prev * maxStepBps;
+  return Math.abs(next - prev) <= Math.ceil((prev * maxStepBps) / 10_000);
 }
 
 /** Per-capita inflation in bps: growth of (supply / players). Integer math, mirrored on-chain. */

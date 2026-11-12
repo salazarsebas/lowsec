@@ -395,3 +395,14 @@ fn create_player_cannot_be_called_by_others() {
     let pk: near_sdk::PublicKey = "ed25519:6E8sCci9badyRkXb3JoRpBj5p8C6Tw41ELDZoiihKEtp".parse().unwrap();
     let _ = c.create_player("alice".into(), pk);
 }
+
+#[test]
+fn the_rule_output_is_always_accepted_by_the_bound() {
+    let p = Params::default();
+    for f in (7_000..=11_000).step_by(1) {
+        for infl in [-5_000i64, -100, 0, 100, 101, 650, 5_000, 100_000] {
+            let next = council_rule(&p, f, infl);
+            assert!(within_bound(f, next, p.council_max_step_bps), "faucet {f} infl {infl} -> {next}");
+        }
+    }
+}

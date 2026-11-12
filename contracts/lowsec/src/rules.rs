@@ -190,7 +190,8 @@ pub fn council_signal_bps(window: &[(u128, u128, u64)]) -> i64 {
 
 /// On-chain bound: |next - prev| <= prev * max_step
 pub fn within_bound(prev: u64, next: u64, max_step_bps: u64) -> bool {
-    (next as i128 - prev as i128).unsigned_abs() * 10_000 <= prev as u128 * max_step_bps as u128
+    // ceil(prev * max_step) so the rule's own integer rounding (a cut of exactly 10%) is always accepted
+    (next as i128 - prev as i128).unsigned_abs() <= (prev as u128 * max_step_bps as u128).div_ceil(10_000)
 }
 
 /// Lane between two towns: 0 mina-forja, 1 forja-puerto, 2 mina-puerto
