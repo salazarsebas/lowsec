@@ -18,6 +18,7 @@ async function params(): Promise<ChainParams> {
   if (!paramsCache || Date.now() - paramsCache.at > 30_000) paramsCache = { at: Date.now(), v: await view<ChainParams>("get_params") };
   return paramsCache.v;
 }
+let genesisMs: number | null = null;
 const haulers = PERSONAS.map((p) => new Hauler(p, ai, params));
 const council = new Council(ai);
 
@@ -36,6 +37,7 @@ const TOKENS = ["gold", ...GOODS];
 app.get("/api/state", async (c) => {
   const acc = c.req.query("account");
   const [eco, prm] = await Promise.all([view<Economy>("economy"), params()]);
+  genesisMs ??= Number(await view<number>("genesis_ms"));
   let me: any = null;
   if (acc) {
     const [player, bal] = await Promise.all([view<any>("get_player", { account_id: acc }), view<string[]>("mt_batch_balance_of", { account_id: acc, token_ids: TOKENS })]);
@@ -47,7 +49,7 @@ app.get("/api/state", async (c) => {
       return { id: h.persona.id, name: h.persona.name, style: h.persona.style, player, balances: Object.fromEntries(TOKENS.map((t, i) => [t, Number(bal[i])])), decisions: lastDecisions.get(h.persona.id) ?? [] };
     }),
   );
-  return c.json({ economy: eco, params: prm, me, npcs, feed: getFeed(40), ai: { mode: ai.mode, model: ai.model }, serverTime: Date.now() });
+  return c.json({ economy: eco, params: prm, me, npcs, feed: getFeed(40), ai: { mode: ai.mode, model: ai.model }, genesisMs, contract: CONTRACT_ID, explorer: EXPLORER, serverTime: Date.now() });
 });
 
 app.get("/api/report", async (c) => {

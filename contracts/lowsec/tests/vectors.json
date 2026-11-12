@@ -39,6 +39,8 @@
   "councilMaxStepBps": 1000,
   "councilMinFaucetBps": 7000,
   "councilMaxFaucetBps": 11000,
+  "councilSmoothingBps": 10000,
+  "councilScalesGrant": true,
   "ticksPerWeek": 168
  },
  "price": [

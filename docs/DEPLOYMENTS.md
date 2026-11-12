@@ -44,3 +44,24 @@ Result of `arrive` (from the tx logs): hauler-1 hauled 20 ore Mina→Forja on Lo
 roll 471 < chance 2000 bps → **ambushed**: 6 ore burned (`mt_burn`, memo `ambush_destroyed`), 4 looted by hauler-2, 10 delivered, raid stake returned.
 
 On-chain books after the smoke test (`economy` view): gold supply 972 = 1000 starter grants − 100 NPC sell orders − 10 raid fee − 3 toll + 85 NPC buy orders; ore supply 9 = 20 bought − 6 burned − 5 sold.
+
+### v0.1.2 — server views + function-call keys (Phase 2)
+| Step | Tx |
+|---|---|
+| redeploy (adds `last_council_epoch`, `genesis_ms`; wasm sha256 `ae358172…10a4e2`, state kept) | [JCU7qTGn…](https://testnet.nearblocks.io/txns/JCU7qTGnebyNQ8drLifge9Y57TzFuNVmZjDH5Gs8UBxv) |
+| FC key `onboarder` on lowsec.testnet (`create_player` only, 1 NEAR allowance) | [JCwhwkv3…](https://testnet.nearblocks.io/txns/JCwhwkv3fTmkMF2ufAXTzheWgyJ29tXf6BwUSU3XEGKN) |
+| FC key `council` on lowsec-council.testnet (`council_update`, `record_decision`) | [3SowfzuB…](https://testnet.nearblocks.io/txns/3SowfzuB5urNEaLn3m9SKHsK7fpJ5hHVjuye2kyyAsMx) |
+| FC key hauler-1 (game methods + `record_decision`) | [2km3s7Ng…](https://testnet.nearblocks.io/txns/2km3s7Ngh1v5PYZ4gg6MQqAZbFFHgq8C2BHhsgxcmY8h) |
+| FC key hauler-2 (game methods + `record_decision`) | [G9cUUNPK…](https://testnet.nearblocks.io/txns/G9cUUNPKnrHkMYCuubkuc3BDr7Gr8p6LN5MiLhahPUeb) |
+
+The private keys live only in `~/.near-credentials/testnet/lowsec-fc/` (chmod 600), not in this repo.
+
+### Live examples (server running with AI in MOCK mode)
+| Event | Tx |
+|---|---|
+| Council `council_update` (epoch 2: faucets 100% → 102%) | [12aXPVHm…](https://testnet.nearblocks.io/txns/12aXPVHmt81RdubJi3sKyHnDRhykwRQ5mxuq6mpSj1fj) |
+| Vex hauls 25 ore mina→forja via Lowsec (meta-tx via relayer) | [FiekyJi6…](https://testnet.nearblocks.io/txns/FiekyJi6T6aQYzjMKiZfx8heLMAQpC8s3QP8ARmkpXa5) |
+| Kestrel arrives in mina with 25 parts | [2pVQD162…](https://testnet.nearblocks.io/txns/2pVQD162ECdg3HHkUWZrVeACnKvtBepAj16jd38hLcXa) |
+| Vex sells 25 fuel in mina for 450 gold | [ZEbmcGsT…](https://testnet.nearblocks.io/txns/ZEbmcGsTrTs95NsHExzDzqCaMaEFZ8JcxPhfjhzB93d) |
+
+Players created by the headless e2e run (`scripts/e2e.mjs`): `pilot132871`, `pilot270474` and `pilot135756.lowsec.testnet`. Each one joined, bought ore, hauled it via Lowsec, sold it and posted a raid, all gasless.

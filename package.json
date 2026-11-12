@@ -5,7 +5,14 @@
   "license": "MIT",
   "scripts": {
     "sim": "pnpm --filter @lowsec/sim sim",
-    "test": "pnpm -r test"
+    "test": "pnpm -r test",
+    "dev": "pnpm --parallel --filter @lowsec/server --filter @lowsec/web dev",
+    "start": "pnpm --parallel --filter @lowsec/server --filter @lowsec/web start",
+    "build": "pnpm --filter @lowsec/web build",
+    "setup-keys": "pnpm --filter @lowsec/server setup-keys"
   },
-  "packageManager": "pnpm@10.34.6"
+  "packageManager": "pnpm@10.34.6",
+  "devDependencies": {
+    "playwright": "^1.65.0"
+  }
 }

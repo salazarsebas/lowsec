@@ -11,7 +11,7 @@ let relayer: Account | null = null;
 export function relayerAccount(): Account {
   if (!relayer) {
     const k = fullKey(RELAYER_ID, "relayer");
-    if (!k) throw new Error(`no key for relayer ${RELAYER_ID}: run scripts/setup-testnet.sh or set RELAYER_PRIVATE_KEY`);
+    if (!k) throw new Error(`no key for relayer ${RELAYER_ID}: put it in ~/.near-credentials/testnet/ or set RELAYER_PRIVATE_KEY`);
     relayer = account(RELAYER_ID, k);
   }
   return relayer;
