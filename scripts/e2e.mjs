@@ -1,87 +1,133 @@
 // End-to-end check of the full loop in a headless browser + screenshots for the README.
 // Usage: pnpm dev (in another shell), then: node scripts/e2e.mjs [http://localhost:3000]
+// Two pilots: a hauler (main) and a raider who camps the hauler's Lowsec lane, so an ambush
+// happens within a few runs (the run keeps hauling Mina <-> Forja via Lowsec until it does).
 import { chromium } from "playwright";
 const URL = process.argv[2] ?? "http://localhost:3000";
 const OUT = "docs/screenshots";
-const name = `pilot${Math.floor(Math.random() * 1e6)}`;
-const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
+const MAX_RUNS = Number(process.env.MAX_RUNS ?? 14);
+const rnd = Math.floor(Math.random() * 1e5);
+const log = (...a) => console.log(new Date().toLocaleTimeString("en-GB"), ...a);
 
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
-page.on("pageerror", (e) => log("PAGE ERROR", e.message));
-const shot = (n) => page.screenshot({ path: `${OUT}/${n}.png`, fullPage: true });
-const toast = async () => (await page.locator(".toast").first().textContent({ timeout: 60_000 }))?.trim();
+const mk = async () => {
+  const p = await (await browser.newContext({ viewport: { width: 1440, height: 1000 } })).newPage();
+  p.on("pageerror", (e) => log("PAGE ERROR", e.message));
+  return p;
+};
+const page = await mk();
+const shot = (n, p = page) => p.screenshot({ path: `${OUT}/${n}.png`, fullPage: true });
+const toast = async (p = page) => (await p.locator(".toast").first().textContent({ timeout: 90_000 }))?.trim();
+const dismiss = (p = page) => p.click(".toast", { timeout: 1000 }).catch(() => {});
 
+async function join(p, name) {
+  await p.goto(URL);
+  await p.waitForSelector(".map");
+  await p.fill(".login input", name);
+  await p.click(".login button.primary");
+  await p.waitForSelector("text=Your hold", { timeout: 120_000 });
+  log(name, "joined:", await toast(p));
+  await dismiss(p);
+}
+async function postRaid(p, lane) {
+  await p.locator(".panel", { hasText: "Raid a Lowsec lane" }).locator("select").selectOption({ label: lane });
+  await p.locator("button", { hasText: "Post raid" }).click();
+  const t = await toast(p);
+  log("raid:", t);
+  await dismiss(p);
+  return t;
+}
+
+// 1. landing
 await page.goto(URL);
 await page.waitForSelector(".map");
 await page.waitForTimeout(1500);
 await shot("01-login");
 
-log("join as", name);
-await page.fill(".login input", name);
-await page.click(".login button.primary");
-await page.waitForSelector("text=Your hold", { timeout: 90_000 });
-log("toast:", await toast());
-await shot("02-joined");
+// 2. raider pilot camps mina-forja
+const raider = await mk();
+await join(raider, `raider${rnd}`);
+await postRaid(raider, "mina-forja");
+await raider.waitForTimeout(2500);
+await shot("05-raid-posted", raider);
 
-log("buy 10 ore in Mina");
-await page.click(".toast");
-await page.locator("tr", { hasText: "ore" }).locator("button", { hasText: "Buy" }).click();
-log("toast:", await toast());
-await page.waitForTimeout(3000);
+// 3. hauler pilot
+await join(page, `pilot${rnd}`);
+await page.waitForTimeout(1500);
+await shot("02-joined-onboarding");
 
-log("haul ore to Forja via Lowsec");
-await page.click(".toast").catch(() => {});
-const haul = page.locator(".panel", { has: page.locator("h3", { hasText: /^Haul$/ }) });
-await haul.locator("select").nth(0).selectOption("ore");
-await haul.locator("select").nth(1).selectOption({ label: "Forja" });
-await page.locator("button.route", { hasText: "Lowsec" }).click();
-await page.waitForTimeout(500);
-await page.locator("button.primary", { hasText: "Depart" }).click();
-await page.waitForSelector("text=On the road", { timeout: 60_000 });
-await page.waitForTimeout(2500);
-await shot("03-hauling-lowsec");
-
-log("wait for arrival (auto-arrive)");
-await page.waitForSelector(".toast >> text=/Arrived|AMBUSHED/", { timeout: 120_000 });
-log("toast:", await toast());
-await shot("04-arrived");
-
-await page.click(".toast").catch(() => {});
-await page.waitForSelector("text=Market · Forja", { timeout: 60_000 });
-const sell = page.locator("tr", { hasText: "ore" }).locator("button", { hasText: "Sell all" });
-if (await sell.isEnabled()) {
-  await sell.click();
-  log("toast:", await toast());
+const haulPanel = () => page.locator(".panel", { has: page.locator("h3", { hasText: /^Haul$/ }) });
+let ambushed = false;
+for (let run = 1; run <= MAX_RUNS && !ambushed; run++) {
+  const inMina = (await page.locator("h3", { hasText: "Market · Mina" }).count()) > 0;
+  const good = inMina ? "ore" : "parts";
+  const to = inMina ? "Forja" : "Mina";
+  await page.locator("input[type=range]").first().fill("20").catch(() => {});
+  await page.locator("tr", { hasText: good }).locator("button", { hasText: "Buy" }).click();
+  log(`run ${run}: buy`, await toast());
+  await dismiss();
   await page.waitForTimeout(2500);
+  await haulPanel().locator("select").nth(0).selectOption(good);
+  await haulPanel().locator("select").nth(1).selectOption({ label: to });
+  await page.locator("button.route", { hasText: "Lowsec" }).click();
+  await page.locator("button.primary", { hasText: "Depart" }).click();
+  await page.waitForSelector("text=On the road", { timeout: 60_000 });
+  log(`run ${run}: ${good} → ${to} via Lowsec`);
+  if (run === 1) {
+    await page.waitForTimeout(3000);
+    await shot("03-hauling-lowsec");
+  }
+  const r = await Promise.race([
+    page.waitForSelector(".ambush-banner", { timeout: 120_000 }).then(() => "ambush"),
+    page.waitForSelector(".toast >> text=/Arrived/", { timeout: 120_000 }).then(() => "arrived"),
+  ]);
+  if (r === "ambush") {
+    ambushed = true;
+    await page.waitForTimeout(350);
+    await page.locator(".map-holder").screenshot({ path: `${OUT}/04-ambush.png` });
+    await page.waitForTimeout(500);
+    await shot("04b-ambush-full");
+    log(`run ${run}: AMBUSHED —`, await toast());
+  } else log(`run ${run}:`, await toast());
+  await dismiss();
+  await page.waitForSelector("h3:has-text('Market ·')", { timeout: 60_000 });
+  const sell = page.locator("tr", { hasText: good }).locator("button", { hasText: "Sell all" });
+  if (await sell.isEnabled()) {
+    await sell.click();
+    log(`run ${run}: sell`, await toast());
+    await dismiss();
+    await page.waitForTimeout(2500);
+  }
+  // keep the raider camping the lane (raids expire after 24 ticks)
+  if (!ambushed && run % 3 === 0) await postRaid(raider, "mina-forja").catch(() => {});
 }
+if (!ambushed) log(`no ambush in ${MAX_RUNS} runs (bad luck); 04-ambush.png not refreshed`);
+await page.waitForTimeout(2000);
+await shot("10-session-goals");
 
-log("post a raid");
-await page.click(".toast").catch(() => {});
-await page.locator(".panel", { hasText: "Raid a Lowsec lane" }).locator("select").selectOption({ label: "mina-puerto" });
-await page.locator("button", { hasText: "Post raid" }).click();
-log("toast:", await toast());
-await page.waitForTimeout(3000);
-await shot("05-raid-posted");
-
-log("hover an NPC hauler");
-await page.click(".toast").catch(() => {});
+// 4. NPC tooltip
 const npc = page.locator("g.mover", { hasText: "Kestrel" }).first();
 await npc.hover({ force: true });
 await page.waitForSelector(".tooltip", { timeout: 10_000 });
 await page.locator(".map-wrap").screenshot({ path: `${OUT}/06-npc-tooltip.png` });
 
-log("economic report");
+// 5. deposit quote (NEAR Intents 1Click dry:true)
+await page.locator(".deposit button", { hasText: "Get quote" }).click();
+await page.waitForSelector(".deposit .small b, .deposit .red", { timeout: 30_000 });
+await page.locator(".deposit").screenshot({ path: `${OUT}/09-intents-quote.png` });
+log("quote:", (await page.locator(".deposit .small").first().textContent())?.trim());
+
+// 6. economic report
 await page.click("button.tab >> text=Economic Report");
 await page.waitForSelector("text=Faucets", { timeout: 30_000 });
-await page.waitForTimeout(1500);
+await page.waitForTimeout(2000);
 await shot("07-economic-report");
 
-log("fast-forward");
+// 7. fast-forward
 await page.click("button.tab >> text=Fast-forward");
 await page.click("text=Simulate 4 weeks");
 await page.waitForSelector("text=mean daily inflation", { timeout: 60_000 });
 await shot("08-fast-forward");
 
 await browser.close();
-log("done; account", `${name}.lowsec.testnet`);
+log("done; accounts", `pilot${rnd}.lowsec.testnet`, `raider${rnd}.lowsec.testnet`, ambushed ? "(ambushed)" : "");

@@ -104,13 +104,13 @@ export class Hauler {
 
   private async stepInner() {
     const P = this.persona;
-    const player = await view<Player | null>("get_player", { account_id: P.id });
+    const player = await view<Player | null>("get_player", { account_id: P.id }, 0);
     if (!player) {
       const r = await this.call("register", { town: P.home });
       push({ actor: P.name, type: "register", text: `${P.name} joined at ${P.home}`, txHash: r.txHash, ok: r.ok });
       return;
     }
-    const eco = await view<Economy>("economy");
+    const eco = await view<Economy>("economy", {}, 0);
     if (player.haul) {
       if (eco.tick >= player.haul.arrive_tick) {
         const r = await this.call("arrive", {});
@@ -121,7 +121,7 @@ export class Hauler {
       return;
     }
     const tokens = ["gold", ...GOODS];
-    const bal = (await view<string[]>("mt_batch_balance_of", { account_id: P.id, token_ids: tokens })).map(Number);
+    const bal = (await view<string[]>("mt_batch_balance_of", { account_id: P.id, token_ids: tokens }, 0)).map(Number);
     for (let i = 1; i < 4; i++) {
       if (bal[i] > 0) {
         const r = await this.call("sell", { good: tokens[i], qty: bal[i] });

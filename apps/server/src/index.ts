@@ -87,7 +87,7 @@ app.post("/api/relay", async (c) => {
   }
   const sender0 = (sd as any).delegateAction.senderId as string;
   const method0 = (sd as any).delegateAction.actions?.[0]?.functionCall?.methodName;
-  const before = method0 === "arrive" ? await view<any>("get_player", { account_id: sender0 }).catch(() => null) : null;
+  const before = method0 === "arrive" ? await view<any>("get_player", { account_id: sender0 }, 0).catch(() => null) : null;
   const r = await relaySigned(sd);
   const sender = (sd as any).delegateAction.senderId as string;
   const method = (sd as any).delegateAction.actions?.[0]?.functionCall?.methodName;

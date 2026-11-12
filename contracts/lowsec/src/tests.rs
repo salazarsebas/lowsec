@@ -291,7 +291,8 @@ fn signal_is_mean_growth_over_window_and_idle_epochs_merge() {
     // bob's grant (500 -> 1000) is spread over the 3 epochs it covers, not counted as one +100% epoch
     assert_eq!(e[1].inflation_bps, 3_333);
     let sig = c.council_signal().unwrap();
-    assert_eq!(sig.epochs_covered, 4); // window 3 = both records, 1 + 3 epochs
+    // the genesis record (supply 0 -> 500) is excluded: only the 3-epoch record counts
+    assert_eq!((sig.epochs_covered, sig.signal_bps), (3, 3_333));
 }
 
 #[test]

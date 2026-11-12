@@ -15,8 +15,9 @@ export function Report() {
   const e = r.economy;
   const t = e.total;
   const minted = t.minted_npc_buy_orders + t.minted_starter_grants;
-  const burned = t.burned_npc_sell_orders + t.burned_tolls + t.burned_raid_fees;
-  const ep = r.epochs as any[];
+  const burned = t.burned_npc_sell_orders + t.burned_tolls + t.burned_raid_fees + (t.burned_dock_fees ?? 0);
+  const sig = e.council_signal;
+  const ep = (r.epochs as any[]).filter((x) => Number(x.supply_start) > 0); // genesis epoch: growth undefined
   return (
     <div className="report">
       <div className="panel">
@@ -45,13 +46,14 @@ export function Report() {
               <tr><td>Town sell orders (you buy cargo)</td><td className="red">−{t.burned_npc_sell_orders}</td></tr>
               <tr><td>Lane tolls</td><td className="red">−{t.burned_tolls}</td></tr>
               <tr><td>Raid fees</td><td className="red">−{t.burned_raid_fees}</td></tr>
+              <tr><td>Docking fees (5% of gold above 400 — progressive)</td><td className="red">−{t.burned_dock_fees ?? 0}</td></tr>
             </tbody>
           </table>
         </div>
       </div>
       <div className="panel">
-        <h3>Inflation per epoch vs target <span className="muted small">(1 epoch = 4 min live · with only a handful of testnet players one sale swings it hard; Fast-forward shows the 120-player economy)</span></h3>
-        <LineChart band={[0, 1]} yFmt={(v) => `${v.toFixed(1)}%`} series={[
+        <h3>Gold growth per epoch vs 1% target <span className="muted small">(1 epoch = 4 min live; y-axis clipped at ±25%, ▲ marks the real value. With a handful of testnet pilots one sale swings an epoch, which is why the Council uses a 3-epoch mean and holds below 5 players)</span></h3>
+        <LineChart band={[0, 1]} clip={[-25, 25]} yFmt={(v) => `${v.toFixed(1)}%`} series={[
           { name: "inflation %", color: "#ff5c7a", values: ep.map((x) => x.inflation_bps / 100) },
           { name: "faucet % / 100", color: "#3ee6ff", values: ep.map((x) => x.faucet_bps / 10000), dashed: true },
         ]} />
@@ -60,10 +62,19 @@ export function Report() {
         <h3>AI Economic Council</h3>
         <code className="rule">{r.councilRule}</code>
         <p className="muted small">The number comes from the public rule (the contract computes it too: <code>rule_next_faucet_bps</code>) and the contract rejects any change above ±10% per epoch. The model only writes the explanation.</p>
+        {sig && (
+          <div className="signal">
+            <div className="muted small">What the rule sees right now (contract view <code>council_signal</code>)</div>
+            <div>
+              Gold {Number(sig.supply_start).toLocaleString()} → {Number(sig.supply_end).toLocaleString()} over {sig.epochs_covered} epoch(s) = <b>{(sig.signal_bps / 100).toFixed(2)}%/epoch</b> vs target {(sig.target_bps / 100).toFixed(0)}% ·{" "}
+              {sig.hold ? <span className="amber">HOLD — {sig.hold}</span> : <>faucets {sig.faucet_bps / 100}% → <b>{sig.next_faucet_bps / 100}%</b> ({sig.next_faucet_bps > sig.faucet_bps ? "raise: growth below target" : sig.next_faucet_bps < sig.faucet_bps ? "cut: growth above target" : "hold"})</>}
+            </div>
+          </div>
+        )}
         {r.council.length === 0 && <p className="muted">Waiting for the next epoch to close…</p>}
         {r.council.slice(0, 6).map((c: any) => (
           <div key={c.ts} className="council-entry">
-            <div><b>Epoch {c.epoch}</b> · inflation {(c.inflationBps / 100).toFixed(2)}% · faucets {c.prevFaucetBps / 100}% → <b>{c.nextFaucetBps / 100}%</b> <AttestationBadge d={c} /></div>
+            <div><b>Epoch {c.epoch}</b> · growth {(c.inflationBps / 100).toFixed(2)}%/epoch ({c.windowEpochs}-epoch mean, {c.players} players) · {c.hold ? <span className="amber">hold at {c.prevFaucetBps / 100}%</span> : <>faucets {c.prevFaucetBps / 100}% → <b>{c.nextFaucetBps / 100}%</b></>} <AttestationBadge d={c} /></div>
             <div className="tt-reason">“{c.explanation}”</div>
             {c.tx && <a className="small" href={`${r.explorer}/txns/${c.tx}`} target="_blank" rel="noreferrer">council_update tx ↗</a>}
           </div>

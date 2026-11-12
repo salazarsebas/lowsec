@@ -1,0 +1,7 @@
+{
+  "name": "@lowsec/examples",
+  "private": true,
+  "type": "module",
+  "scripts": { "agent": "node external-agent.mjs" },
+  "dependencies": { "near-api-js": "^7.5.3" }
+}

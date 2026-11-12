@@ -3,7 +3,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { State } from "@/lib/types";
 import { GOODS, GOOD_ICON, TOWNS, TOWN_LABEL } from "@/lib/types";
 import { act, clearSession, loadSession, signup, type Session } from "@/lib/near";
-import { GameMap } from "@/components/GameMap";
+import { GameMap, pointOn, type Blast } from "@/components/GameMap";
+import { ContractOfDay, Leaderboard, Onboarding } from "@/components/Goals";
+import { Deposit } from "@/components/Deposit";
+import { boom, chime, setSound } from "@/lib/sound";
 import { Actions } from "@/components/Actions";
 import { Report } from "@/components/Report";
 import { Simulate } from "@/components/Simulate";
@@ -20,6 +23,24 @@ export default function Home() {
   const [toast, setToast] = useState<{ msg: string; ok: boolean; tx?: string } | null>(null);
   const [now, setNow] = useState(Date.now());
   const arriving = useRef(false);
+  const [blasts, setBlasts] = useState<Blast[]>([]);
+  const [shake, setShake] = useState(false);
+  const [banner, setBanner] = useState<string | null>(null);
+  const [sound, setSoundState] = useState(false);
+  const lastHaul = useRef<Record<string, any>>({});
+  const seenFeed = useRef<number>(0);
+
+  const explode = useCallback((h: any, text: string, big: boolean) => {
+    const pt = h ? pointOn(h.from, h.to, h.route, 0.9) : { x: 450, y: 240 };
+    const id = Date.now() + Math.random();
+    setBlasts((b) => [...b, { id, x: pt.x, y: pt.y, text, big }]);
+    setTimeout(() => setBlasts((b) => b.filter((x) => x.id !== id)), 2600);
+    if (big) {
+      setShake(true);
+      setTimeout(() => setShake(false), 650);
+    }
+    boom();
+  }, []);
 
   useEffect(() => {
     setSession(loadSession());
@@ -29,8 +50,20 @@ export default function Home() {
   const refresh = useCallback(async () => {
     const q = session ? `?account=${session.accountId}` : "";
     const r = await fetch(`/api/state${q}`).then((x) => x.json()).catch(() => null);
-    if (r?.economy) setS(r);
-  }, [session]);
+    if (!r?.economy) return;
+    // remember every convoy's last haul so an ambush in the feed can explode at the right spot
+    r.npcs.forEach((n: any) => n.player?.haul && (lastHaul.current[n.name] = n.player.haul));
+    // other pilots' ambushes from the activity feed (our own is handled by auto-arrive)
+    const fresh = (r.feed as any[]).filter((f) => f.ts > seenFeed.current);
+    if (seenFeed.current > 0)
+      fresh.filter((f) => f.type === "ambush" && f.actor !== session?.accountId.split(".")[0]).forEach((f) => {
+        const m = /(\d+)\s*\w*\s*burned/.exec(f.text);
+        explode(lastHaul.current[f.actor], `☠ ${f.actor} ambushed${m ? ` · ${m[1]} burned` : ""}`, false);
+      });
+    if (r.feed[0]) seenFeed.current = Math.max(seenFeed.current, r.feed[0].ts);
+    if (r.me?.player?.haul) lastHaul.current.__me = r.me.player.haul;
+    setS(r);
+  }, [session, explode]);
   useEffect(() => {
     refresh();
     const t = setInterval(refresh, 2500);
@@ -45,11 +78,19 @@ export default function Home() {
     arriving.current = true;
     act(session, "arrive", {}).then((r) => {
       const v = r.value;
-      if (v?.ambushed) setToast({ msg: `☠ AMBUSHED! ${v.burned} burned, ${v.looted} looted${v.raider ? ` by ${String(v.raider).split(".")[0]}` : " by pirates"} — ${v.delivered} delivered`, ok: false, tx: r.txHash });
-      else if (r.ok) setToast({ msg: `Arrived in ${TOWN_LABEL[v?.town] ?? "town"} with ${v?.delivered ?? ""} cargo`, ok: true, tx: r.txHash });
+      if (v?.ambushed) {
+        const who = v.raider ? String(v.raider).split(".")[0] : "pirates";
+        explode(h, `☠ −${v.burned} ${GOOD_ICON[GOODS[h.good]]} BURNED`, true);
+        setBanner(`AMBUSHED by ${who}! ${v.burned} cargo burned forever, ${v.looted} looted · ${v.delivered} made it`);
+        setTimeout(() => setBanner(null), 4200);
+        setToast({ msg: `☠ AMBUSHED! ${v.burned} burned (mt_burn), ${v.looted} looted by ${who} — ${v.delivered} delivered`, ok: false, tx: r.txHash });
+      } else if (r.ok) {
+        chime();
+        setToast({ msg: `Arrived in ${TOWN_LABEL[v?.town] ?? "town"} with ${v?.delivered ?? ""} cargo${Number(v?.dock_fee) > 0 ? ` · docking fee ${v.dock_fee}◎ burned` : ""}`, ok: true, tx: r.txHash });
+      }
       refresh();
     }).finally(() => setTimeout(() => (arriving.current = false), 3000));
-  }, [s, session, refresh]);
+  }, [s, session, refresh, explode]);
 
   async function join() {
     setJoining("Creating your account…");
@@ -80,6 +121,7 @@ export default function Home() {
           ))}
         </nav>
         <div className="hdr-right">
+          <button className="link" title="optional sound effects" onClick={() => (setSound(!sound), setSoundState(!sound))}>{sound ? "🔊" : "🔈"}</button>
           {s && <span className={s.ai.mode === "tee" ? "badge tee" : "badge mock"} title={s.ai.model}>{s.ai.mode === "tee" ? `NPC brains: NEAR AI TEE (${s.ai.model})` : "NPC brains: MOCK (no NEAR AI key)"}</span>}
           {session && s?.me && (
             <span className="me">
@@ -101,7 +143,11 @@ export default function Home() {
       {s && tab === "play" && (
         <div className="layout">
           <section className="left">
-            <GameMap s={s} now={now} />
+            <div className="map-holder">
+              <GameMap s={s} now={now} blasts={blasts} shake={shake} />
+              {banner && <div className="ambush-banner">☠ {banner}</div>}
+            </div>
+            {session && <Onboarding s={s} />}
             {!session ? (
               <div className="panel login">
                 <h2>Haul cargo. Dodge raiders. Don&apos;t crash the economy.</h2>
@@ -126,6 +172,8 @@ export default function Home() {
                 <div className="muted small">NEP-245 tokens on <a href={`${explorer}/address/${s.contract}`} target="_blank" rel="noreferrer">{s.contract}</a></div>
               </div>
             )}
+            <ContractOfDay account={session?.accountId} />
+            <Leaderboard me={session?.accountId} />
             <div className="panel">
               <h3>AI haulers <span className="muted small">(hover them on the map)</span></h3>
               {s.npcs.map((n) => {
@@ -147,11 +195,12 @@ export default function Home() {
                 );
               })}
             </div>
+            <Deposit />
             <div className="panel feed">
               <h3>Activity</h3>
               <ul>
                 {s.feed.slice(0, 16).map((f) => (
-                  <li key={f.ts + f.text} className={f.type === "ambush" ? "ambush" : f.type === "council" ? "council" : f.ok === false ? "fail" : ""}>
+                  <li key={f.ts + f.text} className={f.type === "ambush" ? "ambush" : f.type === "council" ? "council" : f.type === "contract" ? "contract" : f.ok === false ? "fail" : ""}>
                     <span className="muted small">{new Date(f.ts).toLocaleTimeString()}</span> {f.text} {f.txHash && <a href={`${explorer}/txns/${f.txHash}`} target="_blank" rel="noreferrer">↗</a>}
                   </li>
                 ))}

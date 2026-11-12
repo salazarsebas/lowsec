@@ -49,9 +49,9 @@ export class Council {
     if (!this.acc || this.busy) return;
     this.busy = true;
     try {
-      const eco = await view<Economy>("economy");
+      const eco = await view<Economy>("economy", {}, 0);
       if (eco.epoch === 0 || eco.rule_next_faucet_bps == null || eco.epoch === this.lastEpoch) return;
-      const acted = await view<number | null>("last_council_epoch");
+      const acted = await view<number | null>("last_council_epoch", {}, 0);
       if (acted !== null && acted >= eco.epoch) {
         this.lastEpoch = eco.epoch;
         return;

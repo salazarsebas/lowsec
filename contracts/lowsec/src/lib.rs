@@ -541,7 +541,9 @@ impl Lowsec {
         if n == 0 {
             return None;
         }
-        let w = self.params.council_window_epochs.max(1).min(n);
+        // genesis epochs (supply_start == 0: growth undefined) are not part of the signal
+        let first_real = (0..n).find(|i| self.epochs.get(*i as u32).unwrap().supply_start > 0)?;
+        let w = self.params.council_window_epochs.max(1).min(n - first_real);
         let recs: Vec<&EpochRecord> = ((n - w)..n).map(|i| self.epochs.get(i as u32).unwrap()).collect();
         let window: Vec<(u128, u128, u64)> = recs.iter().map(|r| (r.supply_start, r.supply_end, r.span)).collect();
         let signal = council_signal_bps(&window);

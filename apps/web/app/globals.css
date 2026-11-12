@@ -23,7 +23,7 @@ input, select { background:#0a0f18; color:var(--text); border:1px solid #2c3a52;
 .lane-label { fill:#ff9db0; font-size:12px; text-anchor:middle; font-weight:700; letter-spacing:1px; } .lane-label.safe { fill:#5fc79f; font-weight:400; }
 .town { fill:#162238; stroke: var(--cyan); stroke-width:2; } .town-name { fill:#fff; font-weight:800; text-anchor:middle; font-size:17px; letter-spacing:2px; }
 .town-icon { text-anchor:middle; font-size:24px; dominant-baseline: middle; } .town-prices { fill:#9fb0c8; text-anchor:middle; font-size:12px; }
-.mover { cursor:pointer; transition: transform .25s linear; } .mover-label { font-size:12px; font-weight:700; text-anchor:middle; paint-order: stroke; stroke:#000; stroke-width:3px; }
+.mover { cursor:pointer; } .mover-body { transition: transform .25s linear; } .mover-label { font-size:12px; font-weight:700; text-anchor:middle; paint-order: stroke; stroke:#000; stroke-width:3px; }
 .tooltip { position:absolute; top:12px; right:12px; width:340px; background:#0b111bee; border:1px solid var(--cyan); border-radius:10px; padding:10px 12px; box-shadow:0 8px 30px #000a; }
 .tt-head { margin-bottom:2px; } .tt-action { margin:6px 0 2px; } .tt-reason { font-style:italic; color:#e9eef7; margin:4px 0 6px; } .tt-foot { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
 .badge { display:inline-block; border-radius:999px; padding:2px 9px; font-size:12px; font-weight:700; border:1px solid; }
@@ -54,3 +54,43 @@ footer { margin-top:16px; }
 
 .charts2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:8px 0; } .charts2 h4 { margin:0 0 4px; font-size:12px; color:var(--muted); font-weight:500; }
 @media (max-width: 900px) { .charts2 { grid-template-columns:1fr; } }
+
+/* ---------- alive map ---------- */
+.lane-safe-flow { fill:none; stroke:#5fc79f; stroke-width:1.5; stroke-dasharray:2 14; opacity:.6; animation: flow 1.6s linear infinite; }
+.lane-low { animation: flow 2.4s linear infinite; }
+.lane-danger { stroke: var(--red); stroke-width:14; opacity:.12; filter: blur(3px); animation: pulse 1s infinite; }
+@keyframes flow { to { stroke-dashoffset: -32; } }
+.trail { transition: cx .25s linear, cy .25s linear; }
+.pulse { animation: ring 1.4s ease-out infinite; transform-origin:center; } .pulse.danger { stroke: var(--red); }
+@keyframes ring { 0% { transform: scale(.6); opacity:.9; } 100% { transform: scale(1.6); opacity:0; } }
+.burn-counter .bc-label { fill:#ff9db0; font-size:11px; letter-spacing:2px; font-weight:700; }
+.burn-counter .bc-value { fill:#fff; font-size:26px; font-weight:900; animation: pop .6s ease-out; transform-box: fill-box; transform-origin: left center; }
+.burn-counter .bc-sub { fill: var(--muted); font-size:11px; }
+@keyframes pop { 0% { transform: scale(1.8); fill:#ffb347; } 100% { transform: scale(1); } }
+.blast-flash { fill:#fff6c8; animation: flash .5s ease-out forwards; }
+@keyframes flash { 0% { r:6; opacity:1; } 40% { r:46; fill:#ffb347; opacity:.95; } 100% { r:60; fill:#ff5c7a; opacity:0; } }
+.blast-ring { fill:none; stroke:#ffb347; stroke-width:4; animation: shock 1.1s ease-out forwards; } .blast-ring.r2 { stroke:#ff5c7a; animation-delay:.18s; }
+@keyframes shock { 0% { r:8; opacity:1; } 100% { r:110; opacity:0; stroke-width:1; } }
+.debris { fill:#ffcf6b; animation: debris 1.2s ease-out forwards; }
+@keyframes debris { 0% { transform: translate(0,0); opacity:1; } 100% { transform: translate(var(--dx), var(--dy)); opacity:0; } }
+.blast-text { fill:#ff5c7a; font-weight:900; font-size:15px; text-anchor:middle; paint-order:stroke; stroke:#000; stroke-width:4px; animation: rise 2.6s ease-out forwards; }
+.blast-text.big { font-size:24px; fill:#ffdd57; }
+@keyframes rise { 0% { transform: translateY(8px) scale(.6); opacity:0; } 15% { transform: translateY(0) scale(1.15); opacity:1; } 80% { opacity:1; } 100% { transform: translateY(-34px); opacity:0; } }
+.map-holder { position:relative; }
+.map-wrap.shake { animation: shake .6s cubic-bezier(.36,.07,.19,.97); }
+@keyframes shake { 10%,90% { transform: translate(-2px,1px); } 20%,80% { transform: translate(5px,-2px); } 30%,50%,70% { transform: translate(-9px,3px); } 40%,60% { transform: translate(9px,-3px); } }
+.ambush-banner { position:absolute; left:50%; top:42%; transform:translate(-50%,-50%); background:#3a0d18f2; border:2px solid var(--red); color:#fff; font-weight:900; font-size:20px; padding:14px 22px; border-radius:12px; box-shadow:0 0 60px #ff5c7a88; text-align:center; animation: slam .35s ease-out; z-index:5; max-width:80%; }
+@keyframes slam { 0% { transform:translate(-50%,-50%) scale(1.6); opacity:0; } 100% { transform:translate(-50%,-50%) scale(1); opacity:1; } }
+
+/* ---------- goals ---------- */
+.onboarding { display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; }
+.step { display:flex; gap:10px; align-items:flex-start; opacity:.55; } .step.now { opacity:1; } .step.done { opacity:.8; }
+.step .num { flex:none; width:26px; height:26px; border-radius:50%; display:grid; place-items:center; font-weight:900; background:#1a2333; border:1px solid #2c3a52; }
+.step.now .num { background: var(--cyan); color:#001018; box-shadow:0 0 12px var(--cyan); animation: pulse 1.4s infinite; } .step.done .num { background: var(--green); color:#002; }
+.cotd .bar { position:relative; height:18px; background:#0a0f18; border:1px solid var(--line); border-radius:9px; margin:6px 0; overflow:hidden; }
+.cotd .bar div { height:100%; background: linear-gradient(90deg, #0f8fa5, #3ddc97); } .cotd .bar span { position:absolute; inset:0; text-align:center; font-size:12px; font-weight:700; line-height:18px; }
+.board ol { margin:0; padding-left:20px; } .board li { padding:2px 0; } .board li > * { display:inline-block; } .board li span:first-child { min-width:150px; }
+.board li.me { color: var(--cyan); font-weight:700; } .board small { margin-left:6px; }
+.deposit .amt { width:70px; } .feed li.contract { color: var(--green); }
+.signal { background:#0a0f18; border:1px solid var(--line); border-radius:8px; padding:8px; margin:8px 0; } .amber { color: var(--amber); font-weight:700; }
+.chart .clipped { font-size:9px; font-weight:700; }

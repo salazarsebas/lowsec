@@ -3,8 +3,17 @@ import { CONTRACT_ID, RPC_URL } from "./config.js";
 
 export const provider = new JsonRpcProvider({ url: RPC_URL });
 
-export async function view<T>(method: string, args: Record<string, unknown> = {}): Promise<T> {
-  return (await provider.callFunction({ contractId: CONTRACT_ID, method, args, blockQuery: { finality: "optimistic" } } as never)) as T;
+/** Views are cached for ~1.5 s and de-duplicated in flight: many browser tabs polling must not hit the RPC rate limit. */
+const viewCache = new Map<string, { at: number; p: Promise<unknown> }>();
+export async function view<T>(method: string, args: Record<string, unknown> = {}, maxAgeMs = 1500): Promise<T> {
+  const k = method + JSON.stringify(args);
+  const hit = viewCache.get(k);
+  if (hit && Date.now() - hit.at < maxAgeMs) return hit.p as Promise<T>;
+  const p = provider.callFunction({ contractId: CONTRACT_ID, method, args, blockQuery: { finality: "optimistic" } } as never) as Promise<T>;
+  viewCache.set(k, { at: Date.now(), p });
+  p.catch(() => viewCache.delete(k));
+  if (viewCache.size > 2000) for (const [key, v] of viewCache) if (Date.now() - v.at > 10_000) viewCache.delete(key);
+  return p;
 }
 
 export function account(id: string, key: KeyPairString): Account {
