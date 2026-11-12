@@ -65,3 +65,24 @@ The private keys live only in `~/.near-credentials/testnet/lowsec-fc/` (chmod 60
 | Vex sells 25 fuel in mina for 450 gold | [ZEbmcGsT…](https://testnet.nearblocks.io/txns/ZEbmcGsTrTs95NsHExzDzqCaMaEFZ8JcxPhfjhzB93d) |
 
 Players created by the headless e2e run (`scripts/e2e.mjs`): `pilot132871`, `pilot270474` and `pilot135756.lowsec.testnet`. Each one joined, bought ore, hauled it via Lowsec, sold it and posted a raid, all gasless.
+
+### v0.2: economy fixes and state reset (Nov 12, ~23:00 CET)
+v0.2 changes the state layout (new params, `EpochRecord.span`, `Ledger.burned_dock_fees`), so the testnet contract was redeployed with `reset_v2`. That is an `#[init(ignore_state)]` method that only the contract account itself can call, and it writes the new state under new storage prefixes. The v0.1 transactions above stay on the explorer.
+
+| Step | Tx |
+|---|---|
+| deploy v0.2 + `reset_v2` | [2qaVhZim…](https://testnet.nearblocks.io/txns/2qaVhZimVtCmzZDerGPKjErrSwiy6onoSUejSRviE46Y) |
+| `add_agent` hauler-1 / hauler-2 / council | [2j3aCDrj…](https://testnet.nearblocks.io/txns/2j3aCDrj33VHmJWvFbfzVNKxjDbLTMtzoimysQre431D) · [9Ti1FjyP…](https://testnet.nearblocks.io/txns/9Ti1FjyPYfJo7Kcx9XQferuiggGjDWn7n9FF1fp3sgU3) · [8VVJTeu7…](https://testnet.nearblocks.io/txns/8VVJTeu7z1yyAGLz4qQaBWfk52HojpPq3B6w97pnrLqk) |
+| code update: the Council signal ignores the genesis epoch (supply 0) | [GJwd14B5…](https://testnet.nearblocks.io/txns/GJwd14B5Mbe9FjKdBpR1bCPwJd9EEDh6LNjUTJko1LH8) |
+| code update: the on-chain bound uses ceil, so the rule's own −10% cut is accepted (wasm sha256 `fd4535aa…d82a017`) | [6jPmQNA5…](https://testnet.nearblocks.io/txns/6jPmQNA5ADy659wandTLPeM2pNNwwqiSfoNJ9AfTScSQ) |
+| create `lowsec-agent-demo.testnet` (faucet) for the external agent example | [86hHAaPr…](https://testnet.nearblocks.io/txns/86hHAaPrwL854bkYQwqrwAEFSizRD2NHGTCocbrFs1Wi) |
+
+Live examples on v0.2:
+| Event | Tx |
+|---|---|
+| Council `council_update` epoch 6: 3-epoch growth 28.74%/epoch > 1% target → faucets 82.62% → 74.35% | [CYZoU7E2…](https://testnet.nearblocks.io/txns/CYZoU7E2fHqo8CS3AGwoPcy6ojYJrrPz3A185RtV2wFQ) |
+| Vex arrives in Puerto and pays a 197 ◎ docking fee (progressive sink) | [DLo5Gidp…](https://testnet.nearblocks.io/txns/DLo5Gidpd2UD77Mf1dpbmsJVV4ieRbqQh1UGAVyBj4Kx) |
+
+The rejected update (before the ceil fix) was [GrCGXqKz…](https://testnet.nearblocks.io/txns/GrCGXqKzFgMbbFN3yMG8eq487Nkmpq1gMSfEz2Qi92HJ): "change exceeds the per-epoch bound". The rule asked for 8262 → 7435 (exactly −10%, truncated), and the old bound check rejected it by one unit.
+
+e2e pilots on v0.2: `raider44541` and `pilot44541` (pilot44541 was ambushed by raider44541: 6 ore burned, 4 looted), `raider69623` and `pilot69623` (14 Lowsec runs, no ambush).
