@@ -285,3 +285,29 @@ fn towns_restock_over_time() {
     c.tick();
     assert!(c.stock[0][0] > after);
 }
+
+#[test]
+fn create_player_is_private_and_validates_names() {
+    let mut c = game(None);
+    ctx("lowsec.testnet", 1);
+    let pk: near_sdk::PublicKey = "ed25519:6E8sCci9badyRkXb3JoRpBj5p8C6Tw41ELDZoiihKEtp".parse().unwrap();
+    let _ = c.create_player("alice".into(), pk);
+}
+
+#[test]
+#[should_panic(expected = "name: 1-32 chars")]
+fn create_player_rejects_bad_names() {
+    let mut c = game(None);
+    ctx("lowsec.testnet", 1);
+    let pk: near_sdk::PublicKey = "ed25519:6E8sCci9badyRkXb3JoRpBj5p8C6Tw41ELDZoiihKEtp".parse().unwrap();
+    let _ = c.create_player("Bad.Name".into(), pk);
+}
+
+#[test]
+#[should_panic(expected = "only the contract account")]
+fn create_player_cannot_be_called_by_others() {
+    let mut c = game(None);
+    ctx("mallory.testnet", 1);
+    let pk: near_sdk::PublicKey = "ed25519:6E8sCci9badyRkXb3JoRpBj5p8C6Tw41ELDZoiihKEtp".parse().unwrap();
+    let _ = c.create_player("alice".into(), pk);
+}

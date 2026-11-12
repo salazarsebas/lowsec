@@ -10,7 +10,7 @@
 //! (sub-accounts with allowance) and relayed as NEP-366 meta-transactions.
 use near_sdk::serde_json::json;
 use near_sdk::store::{LookupMap, LookupSet, Vector};
-use near_sdk::{env, near, require, AccountId, PanicOnDefault};
+use near_sdk::{env, near, require, AccountId, Allowance, NearToken, PanicOnDefault, Promise, PublicKey};
 use std::collections::BTreeMap;
 
 pub mod events;
@@ -156,6 +156,11 @@ pub struct Economy {
     pub decisions: u64,
 }
 
+/// Methods a player's in-browser function-call key may call (all zero-deposit).
+pub const PLAYER_METHODS: &str = "register,buy,sell,start_haul,arrive,raid";
+/// NEAR given to a new player sub-account for its own storage (gas is paid by the relayer via NEP-366).
+pub const PLAYER_FUNDING: NearToken = NearToken::from_millinear(10);
+
 pub const COUNCIL_RULE: &str = "faucet_next = clamp(faucet × (1 − gain × (inflation − target)), ±10%/epoch, [70%, 110%])";
 
 #[near]
@@ -193,6 +198,24 @@ impl Lowsec {
             last_council_epoch: None,
             decisions: Vector::new(b"d"),
         }
+    }
+
+    // ---------------------------------------------------------------- onboarding
+
+    /// Social-style login without a wallet: creates `<name>.<this contract>` holding only a
+    /// function-call key (generated in the player's browser) limited to game methods.
+    /// #[private]: callable only by this account itself, i.e. by the onboarding server through a
+    /// function-call key on the contract account that is restricted to this one method.
+    #[private]
+    pub fn create_player(&mut self, name: String, public_key: PublicKey) -> Promise {
+        require!(env::predecessor_account_id() == env::current_account_id(), "only the contract account");
+        require!(!name.is_empty() && name.len() <= 32 && name.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-' || c == '_'), "name: 1-32 chars [a-z0-9_-]");
+        let account: AccountId = format!("{name}.{}", env::current_account_id()).parse().unwrap_or_else(|_| env::panic_str("invalid name"));
+        events::game("player_account_created", json!({ "account_id": account }));
+        Promise::new(account)
+            .create_account()
+            .transfer(PLAYER_FUNDING)
+            .add_access_key_allowance(public_key, Allowance::limited(NearToken::from_millinear(250)).unwrap(), env::current_account_id(), PLAYER_METHODS)
     }
 
     // ---------------------------------------------------------------- players
