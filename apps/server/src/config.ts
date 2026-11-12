@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 const env = process.env;
 export const NETWORK = env.NEAR_NETWORK ?? "testnet";
 export const RPC_URL = env.NEAR_RPC_URL ?? (NETWORK === "mainnet" ? "https://free.rpc.fastnear.com" : "https://test.rpc.fastnear.com");
+/** Failover list: free public RPCs rate-limit (429) under 5 NPCs + players, so the server rolls over to the next one. */
+export const RPC_URLS = (env.NEAR_RPC_URLS ?? [RPC_URL, ...(NETWORK === "mainnet" ? ["https://near.drpc.org"] : ["https://near-testnet.drpc.org", "https://rpc.testnet.near.org"])].join(",")).split(",").filter(Boolean);
 export const CONTRACT_ID = env.CONTRACT_ID ?? "lowsec.testnet";
 export const COUNCIL_ID = env.COUNCIL_ID ?? "lowsec-council.testnet";
 export const RELAYER_ID = env.RELAYER_ID ?? "lowsec-relayer.testnet";

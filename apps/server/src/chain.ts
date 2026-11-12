@@ -1,7 +1,7 @@
-import { Account, JsonRpcProvider, actions, getTransactionLastResult, teraToGas, type KeyPairString } from "near-api-js";
-import { CONTRACT_ID, RPC_URL } from "./config.js";
+import { Account, FailoverRpcProvider, JsonRpcProvider, actions, getTransactionLastResult, teraToGas, type KeyPairString } from "near-api-js";
+import { CONTRACT_ID, RPC_URLS } from "./config.js";
 
-export const provider = new JsonRpcProvider({ url: RPC_URL });
+export const provider = new FailoverRpcProvider([...new Set(RPC_URLS)].map((url) => new JsonRpcProvider({ url })));
 
 /** Views are cached for ~1.5 s and de-duplicated in flight: many browser tabs polling must not hit the RPC rate limit. */
 const viewCache = new Map<string, { at: number; p: Promise<unknown> }>();

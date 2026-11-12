@@ -134,7 +134,7 @@ export class Hauler {
       push({ actor: P.name, type: "register", text: `${P.name} joined at ${P.home}`, txHash: r.txHash, ok: r.ok });
       return;
     }
-    let eco = await view<Economy>("economy", {}, 0);
+    let eco = await view<Economy>("economy", {}, 1000); // shared by the 5 NPCs within a second (RPC rate limits)
     if (player.haul) {
       fleetHauls.set(P.id, { to: player.haul.to, good: player.haul.good, qty: player.haul.qty });
       if (eco.tick < player.haul.arrive_tick) return;
