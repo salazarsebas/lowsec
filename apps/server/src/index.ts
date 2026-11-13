@@ -64,8 +64,14 @@ app.get("/api/state", async (c) => {
 
 app.get("/api/report", async (c) => {
   const eco = await view<Economy>("economy");
-  const from = Math.max(0, eco.epoch - 60);
-  const epochs = await view<any[]>("epochs", { from, limit: 60 });
+  // `epochs.from` is a Vector *record index*, not a clock epoch. Idle epochs
+  // merge on-chain (record.span > 1), so len(records) << eco.epoch. The old
+  // query used `from = eco.epoch - 60` and at epoch 310 asked for index 250+,
+  // which is past the end of the Vector (~40 records; see council_signal.to_record)
+  // and returned []. API shape unchanged: still `{ ..., epochs: EpochRecord[] }`.
+  const last = eco.council_signal?.to_record;
+  const from = last != null ? Math.max(0, Number(last) + 1 - 200) : 0;
+  const epochs = await view<any[]>("epochs", { from, limit: 200 });
   // Gini over pilots (humans + NPC traders); the Guild's float is an institution, not a player hoard (same as the sim)
   const all = [...new Set([...knownPlayers(), ...pilots().map((h) => h.persona.id)])].filter((p) => p !== GUILD_ID);
   // only accounts registered in the CURRENT contract state (older testnet resets leave stale names behind)
