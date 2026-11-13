@@ -1,6 +1,8 @@
 import type { Decision } from "@/lib/types";
 
-/** Honest labelling: only a verified provider_tee signature earns the green check. */
+/** Honest labelling: only a verified provider_tee signature earns the green check.
+ *  Conditions are unchanged. Visual style lives in styles/intel.css (small seal; MOCK is
+ *  neutral, never the loudest element). */
 export function AttestationBadge({ d }: { d: Pick<Decision, "signatureKind" | "verified" | "mode" | "attestationHash" | "error"> }) {
   let cls = "badge mock";
   let text = "MOCK · not verified";
@@ -11,7 +13,7 @@ export function AttestationBadge({ d }: { d: Pick<Decision, "signatureKind" | "v
   }
   if (d.mode === "tee" && d.verified && d.signatureKind === "provider_tee") {
     cls = "badge tee";
-    text = "TEE verified ✓";
+    text = "◆ TEE VERIFIED";
     title = "Signature kind provider_tee: request+response bytes signed by a model-serving TEE whose attestation was verified before the call (NEAR AI Cloud).";
   } else if (d.mode === "tee" && d.verified) {
     cls = "badge gw";
