@@ -18,7 +18,7 @@ export interface FeedItem { ts: number; actor: string; type: string; text: strin
 export interface Params { travel_ticks: number[]; toll_gold: number[]; cargo_cap: number; tick_seconds: number; epoch_ticks: number; ambush_base_bps: number; ambush_per_raid_bps: number; ambush_max_bps: number; ambush_loss_bps: number; raider_loot_bps: number; raid_min_stake: number; raid_fee_bps: number; raid_ttl_ticks: number; npc_spread_bps: number; faucet_bps: number; [k: string]: any }
 export interface State {
   economy: Economy; params: Params; me: { account: string; player: Player | null; balances: Record<string, number> } | null; npcs: Npc[]; feed: FeedItem[];
-  ai: { mode: "tee" | "mock"; model: string }; genesisMs: number; contract: string; explorer: string; serverTime: number;
+  ai: { mode: "tee" | "mock"; model: string; health?: { lastOk: boolean | null; lastError?: string; calls: number; verified: number; fallbacks: number } }; genesisMs: number; contract: string; explorer: string; serverTime: number;
 }
 export const TOWNS = ["mina", "forja", "puerto"];
 export const TOWN_LABEL: Record<string, string> = { mina: "Mina", forja: "Forja", puerto: "Puerto" };

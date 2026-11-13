@@ -37,7 +37,7 @@ app.use("/api/*", async (c, next) => {
 app.get("/api/health", (c) =>
   c.json({
     network: NETWORK, contract: CONTRACT_ID, relayer: RELAYER_ID, council: COUNCIL_ID, explorer: EXPLORER,
-    ai: { mode: ai.mode, model: ai.model, note: ai.mode === "mock" ? "MOCK MODE: set NEARAI_API_KEY to run NPCs on a NEAR AI Cloud TEE model with verified signatures" : "NEAR AI Cloud TEE; every decision verified with verifyResponse()" },
+    ai: { mode: ai.mode, model: ai.model, health: ai.health, note: ai.mode === "mock" ? "MOCK MODE: set NEARAI_API_KEY to run NPCs on a NEAR AI Cloud TEE model with verified signatures" : "NEAR AI Cloud TEE; every decision verified with verifyResponse()" },
     agents: { enabled: AGENTS_ENABLED, awake: awake(), idlePauseMs: AGENTS_IDLE_PAUSE_MS, npcs: haulers.map((h) => ({ id: h.persona.id, name: h.persona.name, kind: h.persona.kind, ready: h.ready })), council: council.ready },
     relayerKeys: relayerPoolSize(),
   }),
@@ -59,7 +59,7 @@ app.get("/api/state", async (c) => {
       return { id: h.persona.id, name: h.persona.name, kind: h.persona.kind, style: h.persona.style, player, balances: Object.fromEntries(TOKENS.map((t, i) => [t, Number(bal[i])])), decisions: lastDecisions.get(h.persona.id) ?? [], moves: lastMoves.get(h.persona.id) ?? [] };
     }),
   );
-  return c.json({ economy: eco, params: prm, me, npcs, feed: getFeed(40), ai: { mode: ai.mode, model: ai.model }, genesisMs, contract: CONTRACT_ID, explorer: EXPLORER, serverTime: Date.now() });
+  return c.json({ economy: eco, params: prm, me, npcs, feed: getFeed(40), ai: { mode: ai.mode, model: ai.model, health: ai.health }, genesisMs, contract: CONTRACT_ID, explorer: EXPLORER, serverTime: Date.now() });
 });
 
 app.get("/api/report", async (c) => {

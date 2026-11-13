@@ -12,7 +12,8 @@ pnpm i
 pnpm dev        # Node server (relayer + AI haulers + Council) on :8787, game on http://localhost:3000
 ```
 - It plays against the live testnet contract. The server reads its keys from `~/.near-credentials/testnet/` (see `.env.example`). Keys never go into the repo.
-- **MOCK mode:** if `NEARAI_API_KEY` isn't set, the NPC and Council "brains" use a deterministic local policy. That is labelled **MOCK · not verified** everywhere: the header pill, every badge, the attestation file, and `signature_kind="mock"` on-chain. Set the key and the same code calls `z-ai/glm-5.3-flash` on NEAR AI Cloud (TEE).
+- **MOCK mode:** if `NEARAI_API_KEY` isn't set, the NPC and Council "brains" use a deterministic local policy. That is labelled **MOCK · not verified** everywhere: the header pill, every badge, the attestation file, and `signature_kind="mock"` on-chain. Set the key and the same code calls `z-ai/glm-5.3-flash` on NEAR AI Cloud (TEE). If a NEAR AI call fails, that decision falls back to the local policy and is labelled **MOCK fallback · NEAR AI error** (header pill + badge show the error); nothing is ever marked verified without a `provider_tee` signature.
+- **TEE status today (2026-11-13), stated plainly:** with our key, `pnpm --filter @lowsec/server tee:check` passes step 1: the Gateway attestation and the `z-ai/glm-5.3-flash` model TEE report (TCB UpToDate, GPU evidence) verify. Inference then returns **402 "No spending limit configured"**: the NEAR AI account has no credits yet. So every decision on-chain so far is `signature_kind="mock"`, and the demo video shows MOCK. When credits are enabled, the running server switches to verified decisions with no code change.
 - `node scripts/e2e.mjs` runs the whole loop in a headless browser (two pilots, a raider and a hauler) and refreshes every screenshot in [`docs/screenshots`](docs/screenshots).
 
 ## Try it in 3 minutes (do X → see Y)
@@ -58,8 +59,10 @@ Expected terminal output for `pnpm sim --weeks 4` (seed 42, abridged):
 | Council bounded on-chain (±10%/epoch, [70%,110%], once per epoch) | [contracts/lowsec/src/lib.rs:453](contracts/lowsec/src/lib.rs#L453) |
 | Public rule computed by the contract (inputs exposed) | [contracts/lowsec/src/lib.rs:539](contracts/lowsec/src/lib.rs#L539) |
 | AI decisions anchored on-chain (payload hash + attestation hash + signature kind) | [contracts/lowsec/src/lib.rs:471](contracts/lowsec/src/lib.rs#L471) |
-| NEAR AI Cloud TEE inference (`@nearai/inference-sdk`) + `verifyResponse` | [apps/server/src/nearai.ts:73](apps/server/src/nearai.ts#L73), [apps/server/src/nearai.ts:100](apps/server/src/nearai.ts#L100) |
-| Clearly labelled MOCK provider when no key | [apps/server/src/nearai.ts:62](apps/server/src/nearai.ts#L62) |
+| NEAR AI Cloud TEE inference (`@nearai/inference-sdk`) + `verifyResponse` | [apps/server/src/nearai.ts:85](apps/server/src/nearai.ts#L85), [apps/server/src/nearai.ts:129](apps/server/src/nearai.ts#L129) |
+| One-command TEE check: Gateway + model attestation, then a `provider_tee` signature | [apps/server/src/tee-check.ts:22](apps/server/src/tee-check.ts#L22) |
+| Clearly labelled MOCK provider (no key) and MOCK fallback (NEAR AI error) | [apps/server/src/nearai.ts:73](apps/server/src/nearai.ts#L73), [apps/server/src/nearai.ts:118](apps/server/src/nearai.ts#L118) |
+| Council explanation must match the rule's direction, or the rule text is used | [apps/server/src/agents/council.ts:117](apps/server/src/agents/council.ts#L117) |
 | Progressive sink: docking fee on gold above 400 | [contracts/lowsec/src/lib.rs:371](contracts/lowsec/src/lib.rs#L371) |
 | NEAR Intents 1Click quote, `dry: true` (quote only) | [apps/server/src/extras.ts:88](apps/server/src/extras.ts#L88) |
 | Open agent API for external agents with their own NEAR account | [apps/server/src/index.ts:141](apps/server/src/index.ts#L141), [examples/external-agent.mjs:10](examples/external-agent.mjs#L10) |

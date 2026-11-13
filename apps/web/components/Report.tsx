@@ -77,7 +77,7 @@ export function Report() {
           <div key={c.ts} className={c.ok ? "council-entry" : "council-entry rejected"}>
             {!c.ok && <div className="red small">✗ rejected on-chain (see tx) — the contract enforces the bound, not the server</div>}
             <div><b>Epoch {c.epoch}</b> · growth {(c.inflationBps / 100).toFixed(2)}%/epoch ({c.windowEpochs}-epoch mean, {c.players} players) · {c.hold ? <span className="amber">hold at {c.prevFaucetBps / 100}%</span> : <>faucets {c.prevFaucetBps / 100}% → <b>{c.nextFaucetBps / 100}%</b></>} <AttestationBadge d={c} /></div>
-            <div className="tt-reason">“{c.explanation}”</div>
+            <div className="tt-reason">“{c.explanation}”{c.explanationSource === "model" && <span className="muted small"> — written by {c.model}</span>}{c.explanationSource === "rule-fallback" && <span className="amber small"> — model reply contradicted the rule; rule text shown</span>}</div>
             {c.tx && <a className="small" href={`${r.explorer}/txns/${c.tx}`} target="_blank" rel="noreferrer">council_update tx ↗</a>}
           </div>
         ))}

@@ -30,9 +30,20 @@ export interface Attested {
   error?: string;
 }
 
+export interface ProviderHealth {
+  /** null until the first call; false when the last call fell back to MOCK */
+  lastOk: boolean | null;
+  lastError?: string;
+  at?: number;
+  calls: number;
+  verified: number;
+  fallbacks: number;
+}
+
 export interface InferenceProvider {
   readonly mode: "tee" | "mock";
   readonly model: string;
+  readonly health: ProviderHealth;
   complete(messages: ChatMessage[], mock: () => string): Promise<Attested>;
 }
 
@@ -62,6 +73,7 @@ export function readAttestation(hash: string): string | null {
 class MockProvider implements InferenceProvider {
   readonly mode = "mock" as const;
   readonly model = "mock-policy (no NEARAI_API_KEY)";
+  readonly health: ProviderHealth = { lastOk: null, calls: 0, verified: 0, fallbacks: 0 };
   async complete(messages: ChatMessage[], mock: () => string): Promise<Attested> {
     const text = mock();
     const completionId = `mock-${sha256(text + Date.now()).slice(0, 16)}`;
@@ -73,8 +85,23 @@ class MockProvider implements InferenceProvider {
 class TeeProvider implements InferenceProvider {
   readonly mode = "tee" as const;
   readonly model = NEARAI_MODEL;
+  readonly health: ProviderHealth = { lastOk: null, calls: 0, verified: 0, fallbacks: 0 };
   private client: any;
   constructor(private apiKey: string) {}
+  /** never let the key reach logs, the feed, the UI or an attestation bundle */
+  private scrub(e: any): string {
+    const msg = String(e?.message ?? e);
+    const raw = `${e?.failure?.code ? e.failure.code + " " : ""}${e?.status && !msg.startsWith(String(e.status)) ? e.status + " " : ""}${msg}`;
+    return raw.split(this.apiKey).join("[redacted]").replace(/sk-[A-Za-z0-9_-]{8,}/g, "[redacted]").slice(0, 200);
+  }
+  private note(ok: boolean, verified: boolean, error?: string) {
+    this.health.calls++;
+    if (verified) this.health.verified++;
+    if (!ok) this.health.fallbacks++;
+    this.health.lastOk = ok;
+    this.health.lastError = error;
+    this.health.at = Date.now();
+  }
   private async getClient() {
     if (!this.client) {
       const { InferenceClient } = await import("@nearai/inference-sdk/node");
@@ -89,8 +116,10 @@ class TeeProvider implements InferenceProvider {
       completion = await client.chat.completions.create({ model: this.model, messages, temperature: 0.3, max_tokens: 700 });
     } catch (e: any) {
       // fail closed: fall back to the labelled mock policy for this decision
+      const err = `NEAR AI call failed: ${this.scrub(e)}`;
+      this.note(false, false, err);
       const m = await new MockProvider().complete(messages, mock);
-      return { ...m, error: `NEAR AI call failed: ${String(e?.message ?? e).slice(0, 200)}` };
+      return { ...m, error: err };
     }
     const text: string = completion.choices?.[0]?.message?.content ?? "";
     let verified: any = null;
@@ -99,11 +128,12 @@ class TeeProvider implements InferenceProvider {
       try {
         verified = await client.verifyResponse(completion.id);
       } catch (e: any) {
-        error = String(e?.code ?? e?.message ?? e).slice(0, 200);
+        error = this.scrub(e);
         await new Promise((r) => setTimeout(r, 1500));
       }
     }
     const signatureKind = verified?.signatureKind ?? "unverified";
+    this.note(true, !!verified, verified ? undefined : error);
     const attestationHash = storeAttestation({
       mode: "tee",
       model: this.model,

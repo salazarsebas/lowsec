@@ -1,10 +1,14 @@
 import type { Decision } from "@/lib/types";
 
 /** Honest labelling: only a verified provider_tee signature earns the green check. */
-export function AttestationBadge({ d }: { d: Pick<Decision, "signatureKind" | "verified" | "mode" | "attestationHash"> }) {
+export function AttestationBadge({ d }: { d: Pick<Decision, "signatureKind" | "verified" | "mode" | "attestationHash" | "error"> }) {
   let cls = "badge mock";
   let text = "MOCK · not verified";
   let title = "Mock mode: NEARAI_API_KEY not set, decision made by a local rule policy. Nothing is claimed as verified.";
+  if (d.mode === "mock" && d.error) {
+    text = "MOCK fallback · NEAR AI error";
+    title = `The NEAR AI call failed, so this decision used the labelled local policy. Nothing is claimed as verified. ${d.error}`;
+  }
   if (d.mode === "tee" && d.verified && d.signatureKind === "provider_tee") {
     cls = "badge tee";
     text = "TEE verified ✓";

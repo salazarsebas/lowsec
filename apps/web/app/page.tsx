@@ -122,7 +122,11 @@ export default function Home() {
         </nav>
         <div className="hdr-right">
           <button className="link" title="optional sound effects" onClick={() => (setSound(!sound), setSoundState(!sound))}>{sound ? "🔊" : "🔈"}</button>
-          {s && <span className={s.ai.mode === "tee" ? "badge tee" : "badge mock"} title={s.ai.model}>{s.ai.mode === "tee" ? `NPC brains: NEAR AI TEE (${s.ai.model})` : "NPC brains: MOCK (no NEAR AI key)"}</span>}
+          {s && (s.ai.mode === "tee" && s.ai.health?.lastOk === false ? (
+            <span className="badge mock" title={`NEAR AI key set, but the last call failed, so NPCs fell back to the labelled MOCK policy: ${s.ai.health.lastError ?? ""}`}>NPC brains: MOCK fallback (NEAR AI error)</span>
+          ) : (
+            <span className={s.ai.mode === "tee" ? "badge tee" : "badge mock"} title={s.ai.model}>{s.ai.mode === "tee" ? `NPC brains: NEAR AI TEE (${s.ai.model})` : "NPC brains: MOCK (no NEAR AI key)"}</span>
+          ))}
           {session && s?.me && (
             <span className="me">
               <a href={`${explorer}/address/${session.accountId}`} target="_blank" rel="noreferrer">{session.accountId}</a> · <b>{s.me.balances.gold ?? 0}</b> {GOOD_ICON.gold}

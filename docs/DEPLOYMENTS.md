@@ -110,3 +110,10 @@ Demo recording (real ambush, 2026-11-12 ~23:52 CET): three raider pilots (`raide
 Code-only redeploy (state kept): `council_signal` subtracts the window's `minted_starter_grants` before computing growth; `COUNCIL_RULE` text updated.
 - deploy tx: `4KBrndk1qvtANC3ys9j6NEyPp37vG38SmqDjSGNguXnd` (wasm sha256 `331d7ddf…fb9c16`)
 - right after: epoch 10, raw supply growth 1.82%/epoch → signal without grants 0.31%/epoch → rule says faucet 70% → 70.96% at the next Council turn.
+
+## NEAR AI Cloud TEE check (2026-11-13, ~12:40 CET)
+`pnpm --filter @lowsec/server tee:check` (`apps/server/src/tee-check.ts`) with the account's key:
+- model list: `z-ai/glm-5.3-flash` and `z-ai/glm-5.3` are available; `client.verify()` returns a model TEE report for glm-5.3-flash and Qwen3.8-27B, and gateway-only for deepseek/openai models.
+- 1) attestation: **OK**. Gateway TCB `UpToDate` with attested TLS binding; model `z-ai/glm-5.3-flash` TCB `UpToDate`, GPU evidence present.
+- 2) inference: **FAILED, HTTP 402 "No spending limit configured. Please contact support to set up credits."** The same result for 4 different models: it is the account, not the model.
+- So there is no verified decision yet: no `provider_tee` signature exists, and no "TEE verified" `record_decision` tx. The server runs with the key and falls back per decision to the labelled MOCK policy (`/api/health` → `ai.health.lastError`).
