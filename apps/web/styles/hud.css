@@ -281,3 +281,42 @@ header.hud-top::after { content: ""; position: absolute; left: 0; bottom: -1px; 
 .play.joined ~ .ambush-banner, .play.joined .ambush-banner { padding: var(--top-h) var(--intel-w) var(--dock-h) 0; }
 .ab-title { font-size: clamp(36px, 4.2vw, var(--fs-alert)); white-space: nowrap; }
 @media (max-width: 1500px) { .ab-core { padding: var(--s-5) 64px; } .ab-n b { font-size: 40px; } .ab-nums { gap: var(--s-6); } }
+
+/* ---------- WP5 integration polish ---------- */
+/* (a,e) ambush: the full-screen alert owns the loss numbers + red wash; the map keeps its shockwave/shake
+   but drops its floating loss label and most of its white flash / red vignette while the alert is up */
+.ambush-banner { pointer-events: auto; cursor: pointer; }
+.ab-vignette { animation-duration: 2.5s; }
+.game.alerting .sm-blast-text.big { display: none; }
+.game.alerting .sm-wrap.alarm .sm-flash { animation: none; opacity: 0; }
+.game.alerting .sm-wrap.alarm .sm-vignette { animation-duration: .9s; filter: opacity(.45); }
+
+/* (b) toasts: bottom-right of the visible map, just above the dock (clear of stations' labels up top) */
+.toasts { top: auto; left: auto; transform: none; right: calc(var(--intel-w) + var(--s-2)); bottom: calc(var(--dock-h) + var(--s-1, 4px)); flex-direction: column-reverse; align-items: flex-end; }
+.game.out .toasts, .game.page .toasts { bottom: auto; top: calc(var(--top-h) + var(--s-3)); right: var(--edge); }
+.toasts .toast { max-width: min(560px, 46vw); }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
+
+/* (c) tracker: titles never truncate; only the active step's hint shrinks */
+.tracker { flex-wrap: nowrap; min-width: 0; }
+.tstep { flex: none; }
+.tstep.now { flex: 0 1 auto; min-width: 0; }
+.tstep.now .tbody { min-width: 0; }
+.tstep.now .tdesc { min-width: 0; }
+
+/* (d) dock hierarchy: the one primary action is solid signal; idle panels recede */
+.dock .panel.dim { opacity: .3; filter: saturate(.2) brightness(.85); }
+.dock .panel.dim:hover { opacity: .8; filter: none; }
+.dock .panel.lit { box-shadow: 0 0 0 1px rgba(255, 71, 0, .35), var(--shadow-deep); }
+.dock-market tr.home .row-btns button.buy:not(:disabled) { border-color: var(--signal); color: var(--signal); }
+.dock-market tr .row-btns button.buy.cue:not(:disabled) { background: var(--signal); color: var(--void); border-color: var(--signal); font-weight: 700; }
+.dock-market tr .row-btns button.buy.cue:not(:disabled) { box-shadow: 0 0 16px var(--signal-glow); }
+.dock-market .row-btns button.sell.cue:not(:disabled) { background: var(--profit); color: var(--void); border-color: var(--profit); font-weight: 700; }
+.dock-market .row-btns button.sell:disabled { opacity: .25; }
+.dock button.primary:disabled { background: transparent; color: var(--ink-3); border-color: var(--line-strong); box-shadow: none; opacity: .7; }
+.haul-go .depart:not(:disabled) { height: 44px; font-size: 13px; letter-spacing: .14em; }
+.dock-raid { opacity: .78; } .dock-raid:hover, .dock-raid:focus-within { opacity: 1; }
+.dock .panel.dim.dock-raid { opacity: .3; }
+
+/* payoff hint: the 1280 media rule for the big profit number must not hit the inline "Sell all" */
+.po-total .po-hint b { font: inherit; color: var(--ink); text-shadow: none; }

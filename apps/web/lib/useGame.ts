@@ -20,6 +20,7 @@ export interface TxLog { ts: number; label: string; ok: boolean; tx?: string }
 type CostBasis = Record<string, { qty: number; gold: number }>;
 
 const TOAST_MS = 4500;
+const BANNER_MS = 2500; // full-screen ambush alert auto-dismisses (click also dismisses)
 
 export function useGame() {
   const [session, setSession] = useState<Session | null>(null);
@@ -38,6 +39,8 @@ export function useGame() {
   const lastHaul = useRef<Record<string, any>>({});
   const seenFeed = useRef<number>(0);
   const cost = useRef<CostBasis>({});
+  const bootTs = useRef<number>(Date.now());
+  const handled = useRef<Set<string>>(new Set()); // own arrive/ambush txs already shown
 
   const dismiss = useCallback((id: number) => setToasts((t) => t.filter((x) => x.id !== id)), []);
   const toast = useCallback((msg: string, ok: boolean, tx?: string, kind?: Toast["kind"]) => {
@@ -95,10 +98,34 @@ export function useGame() {
         const m = /(\d+)\s*\w*\s*burned/.exec(f.text);
         explode(lastHaul.current[f.actor], `${f.actor} AMBUSHED${m ? ` · ${m[1]} BURNED` : ""}`, false);
       });
+    // our OWN arrival, recovered from the feed: when testnet RPC is flaky the relayer can land the arrive tx
+    // but hand the client an error (e.g. a retry that panics "not travelling"), so the auto-arrive result never
+    // shows. The server logs the real outcome in the feed; replay it once per tx (same banner/toast as live).
+    const myName = session?.accountId.split(".")[0];
+    // (only entries >5 s old and newer than this page load, so the live auto-arrive path wins when it works)
+    const st = Number(r.serverTime) || Date.now();
+    if (myName)
+      (r.feed as any[]).filter((f) => f.actor === myName && f.ok && f.txHash && (f.type === "ambush" || f.type === "arrive") && f.ts > bootTs.current && st - f.ts > 5000 && !handled.current.has(f.txHash)).reverse().forEach((f) => {
+        handled.current.add(f.txHash);
+        const h = lastHaul.current.__me;
+        if (f.type === "ambush") {
+          const m = /(\d+) burned, (\d+) looted by (\S+)/.exec(f.text);
+          const burned = m ? Number(m[1]) : 0, looted = m ? Number(m[2]) : 0, who = m ? m[3] : "pirates";
+          const good = h?.good != null ? GOODS[h.good] : "cargo";
+          if (h) explode(h, `−${burned} ${good.toUpperCase()} BURNED`, true);
+          const qty = h?.qty ?? burned + looted;
+          setBanner({ who, good, burned, looted, delivered: Math.max(0, qty - burned - looted), qty, valueLost: 0, tx: f.txHash });
+          setTimeout(() => setBanner((b) => (b && b.tx === f.txHash ? null : b)), BANNER_MS);
+          toast(`AMBUSHED! ${burned} burned (mt_burn), ${looted} looted by ${who} — ${Math.max(0, qty - burned - looted)} delivered`, false, f.txHash, "ambush");
+        } else {
+          chime();
+          toast(`Arrived: ${f.text.replace(`${myName} arrived`, "").trim()}`, true, f.txHash, "arrive");
+        }
+      });
     if (r.feed[0]) seenFeed.current = Math.max(seenFeed.current, r.feed[0].ts);
     if (r.me?.player?.haul) lastHaul.current.__me = r.me.player.haul;
     setS(r);
-  }, [session, explode]);
+  }, [session, explode, toast]);
   useEffect(() => {
     refresh();
     const t = setInterval(refresh, 2500);
@@ -118,11 +145,15 @@ export function useGame() {
     const toll = s!.params.toll_gold[h.route] ?? 0;
     act(session, "arrive", {}).then((r) => {
       const v = r.value;
+      if (r.txHash) {
+        if (handled.current.has(r.txHash)) return refresh(); // already replayed from the feed
+        handled.current.add(r.txHash);
+      }
       if (v?.ambushed) {
         const who = v.raider ? String(v.raider).split(".")[0] : "pirates";
         explode(h, `−${v.burned} ${GOODS[h.good].toUpperCase()} BURNED`, true);
         setBanner({ who, good: GOODS[h.good], burned: Number(v.burned) || 0, looted: Number(v.looted) || 0, delivered: Number(v.delivered) || 0, qty: h.qty, valueLost: (Number(v.burned || 0) + Number(v.looted || 0)) * price, tx: r.txHash });
-        setTimeout(() => setBanner(null), 4200);
+        setTimeout(() => setBanner((b) => (b && b.tx === r.txHash ? null : b)), BANNER_MS);
         toast(`AMBUSHED! ${v.burned} burned (mt_burn), ${v.looted} looted by ${who} — ${v.delivered} delivered`, false, r.txHash, "ambush");
       } else if (r.ok) {
         chime();
@@ -157,6 +188,6 @@ export function useGame() {
 
   const onResult = useCallback((msg: string, ok: boolean, tx?: string, kind?: Toast["kind"]) => (toast(msg, ok, tx, kind), refresh()), [toast, refresh]);
 
-  return { session, setSession, s, tab, setTab, joining, join, toasts, dismiss, onResult, now, docking, blasts, shake, banner, payoff, setPayoff, txlog, refresh, recordBuy, clearCost, unitCost };
+  return { session, setSession, s, tab, setTab, joining, join, toasts, dismiss, onResult, now, docking, blasts, shake, banner, dismissBanner: () => setBanner(null), payoff, setPayoff, txlog, refresh, recordBuy, clearCost, unitCost };
 }
 export type Game = ReturnType<typeof useGame>;

@@ -127,10 +127,10 @@ function useLater(v: number, ms: number) {
 }
 
 /** Full-screen ambush moment: red vignette + stencil alert + loss numbers. Click-through. */
-export function AmbushOverlay({ a }: { a: AmbushInfo }) {
+export function AmbushOverlay({ a, onDismiss }: { a: AmbushInfo; onDismiss?: () => void }) {
   const burned = useLater(a.burned, 450), looted = useLater(a.looted, 600), delivered = useLater(a.delivered, 750);
   return (
-    <div className="ambush-banner" role="alert">
+    <div className="ambush-banner" role="alert" onClick={onDismiss} title="Click to dismiss">
       <div className="ab-vignette" />
       <div className="ab-core">
         <div className="ab-rule" />

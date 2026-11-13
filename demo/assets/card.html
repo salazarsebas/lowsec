@@ -1,21 +1,30 @@
 <!doctype html>
 <html><head><meta charset="utf-8"><style>
-html,body{margin:0;width:1920px;height:1080px;background:radial-gradient(ellipse at 50% 40%,#1b2840 0%,#0b0f17 70%);color:#e6edf7;font-family:"DejaVu Sans",system-ui,sans-serif;overflow:hidden}
-.wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:28px}
-.logo{font-size:150px;font-weight:800;letter-spacing:34px;margin-left:34px}
-.logo b{color:#ff5c7a}
-.sub{font-size:44px;color:#b9c6da;max-width:1500px;line-height:1.35}
-.small{font-size:34px;color:#8ea0bb;max-width:1600px;line-height:1.5}
-.pill{display:inline-block;border:2px solid #3ee6ff;color:#3ee6ff;border-radius:40px;padding:10px 30px;margin:0 10px;font-size:34px}
-.lane{position:absolute;left:0;right:0;bottom:120px;height:4px;background:repeating-linear-gradient(90deg,#ff5c7a 0 40px,transparent 40px 70px);opacity:.55}
+@font-face{font-family:"Chakra Petch";font-weight:700;src:url(../../apps/web/app/fonts/chakra-petch-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:"Chakra Petch";font-weight:600;src:url(../../apps/web/app/fonts/chakra-petch-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:"Plex Cond";font-weight:400;src:url(../../apps/web/app/fonts/ibm-plex-sans-condensed-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"JB Mono";font-weight:500;src:url(../../apps/web/app/fonts/jetbrains-mono-latin-500-normal.woff2) format("woff2")}
+html,body{margin:0;width:1920px;height:1080px;color:#FAFAE5;font-family:"Plex Cond","DejaVu Sans",sans-serif;overflow:hidden;
+  background:radial-gradient(ellipse at 30% 35%,rgba(255,71,0,.10),transparent 45%),radial-gradient(ellipse at 75% 70%,rgba(79,179,255,.07),transparent 45%),#050608}
+body::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(250,250,229,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(250,250,229,.035) 1px,transparent 1px);background-size:80px 80px}
+.wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:30px}
+.logo{font:700 160px/1 "Chakra Petch",sans-serif;letter-spacing:40px;margin-left:40px}
+.logo b{color:#FF4700;text-shadow:0 0 40px rgba(255,71,0,.45)}
+.sub{font-size:44px;color:#B9B8A6;max-width:1500px;line-height:1.35}
+.sub b{color:#FAFAE5}
+.small{font:500 28px/1.7 "JB Mono",monospace;color:#8C8B7E;max-width:1600px;letter-spacing:.04em;text-transform:uppercase}
+.pill{display:inline-block;border:2px solid rgba(250,250,229,.35);color:#FAFAE5;padding:10px 30px;margin:0 10px;font:600 30px "Chakra Petch",sans-serif;letter-spacing:.12em;text-transform:uppercase;clip-path:polygon(0 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%)}
+.pill.on{border-color:#FF4700;color:#FF4700}
+.url{font:500 46px "JB Mono",monospace;color:#FF4700}
+.lane{position:absolute;left:0;right:0;bottom:120px;height:3px;background:linear-gradient(90deg,transparent,#F06000 20%,#FF3B3B 50%,#F06000 80%,transparent);box-shadow:0 0 18px rgba(240,96,0,.6);opacity:.8}
 </style></head><body><div class="wrap" id="w"></div><div class="lane"></div>
 <script>
 const q = new URLSearchParams(location.search), k = q.get("k");
 const W = document.getElementById("w");
 if (k === "title") W.innerHTML = `<div class="logo">LOW<b>SEC</b></div><div class="sub">A player-driven trading economy on NEAR.<br>Humans and AI traders share one market, and every gold coin is on-chain.</div>`;
 else if (k === "close") W.innerHTML = `<div class="logo">LOW<b>SEC</b></div>
-  <div><span class="pill">Games With Real Economies</span><span class="pill">Agents</span><span class="pill">Swarms</span></div>
+  <div><span class="pill on">Games With Real Economies</span><span class="pill">Agents</span><span class="pill">Swarms</span></div>
   <div class="small">NEAR testnet · NEP-245 multi-token · gasless meta-transactions<br>NEAR AI Cloud (TEE) decisions anchored on-chain · NEAR Intents 1Click</div>
-  <div class="sub">Open source (MIT) · <b style="color:#3ee6ff">github.com/salazarsebas/lowsec</b></div>`;
+  <div class="sub">Open source (MIT) · <span class="url">github.com/salazarsebas/lowsec</span></div>`;
 else W.innerHTML = `<div class="sub">${q.get("t") ?? ""}</div>`;
 </script></body></html>

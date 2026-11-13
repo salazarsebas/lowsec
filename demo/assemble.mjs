@@ -16,16 +16,16 @@ const plan = [
   { id: "login", src: "main", from: m.login - 0.3, to: m.joined + 1.7, dur: 11, cap: "No wallet, no seed phrase, no gas: type a name and play" },
   { id: "haul", src: "main", from: m[`run${K}`], to: m[`depart${K}`], dur: 12, cap: "Safe lane: slow, no risk. Lowsec: 3x faster, but raiders camp it" },
   { id: "ambush", src: "main", from: m[`depart${K}`], to: m.ambush_end, dur: null, cap: "Ambushed: part of the cargo burns on-chain, part goes to the raider" },
-  { id: "tooltip", src: "main", from: m.tooltip, to: m.tooltip_end, dur: 12, cap: process.env.TEE === "1" ? "4 AI traders: NEAR AI strategy in a TEE, attestation hash on-chain" : "4 AI traders: strategy per epoch, hash on-chain (MOCK: no NEAR AI key yet)" },
+  { id: "tooltip", src: "main", from: m.tooltip, to: m.tooltip_end, dur: 12, cap: process.env.TEE === "1" ? "4 AI traders: NEAR AI strategy in a TEE, attestation hash on-chain" : "4 AI traders: strategy per epoch, hash on-chain (MOCK fallback: NEAR AI credits pending)" },
   { id: "report", src: "main", from: m.report, to: m.report_end, dur: 16, cap: "Economic Report from the contract · Council: one public rule, max 10%/epoch" },
   { id: "ff", src: "main", from: m.ff, to: m.ff_end, dur: 12, cap: "Fast-forward 4 weeks in the simulator: the same rules as the contract" },
   { id: "agent", src: "agent", from: 0.4, to: 12.4, dur: 12, cap: "Real testnet run: an outside agent trading with its own NEAR account" },
-  { id: "intents", src: "main", from: m.intents, to: m.intents_end, dur: 8, cap: "NEAR Intents 1Click: live cross-chain deposit quote (quote only)" },
+  { id: "intents", src: "main", from: m.intents, to: m.intents_end, dur: 8, crop: "640:360:1280:720", cap: "NEAR Intents 1Click: live cross-chain deposit quote (quote only)" },
   { id: "close", card: "close", dur: 8 },
 ];
 
 const ff = (args) => execFileSync("ffmpeg", ["-loglevel", "error", "-y", ...args], { stdio: "inherit" });
-const enc = ["-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p", "-r", "30", "-an"];
+const enc = ["-c:v", "libx264", "-preset", "medium", "-crf", "23", "-pix_fmt", "yuv420p", "-r", "30", "-an"];
 const timeline = [];
 let t = 0;
 for (const s of plan) {
@@ -38,7 +38,7 @@ for (const s of plan) {
     const speed = len / dur;
     writeFileSync(`${SEG}/${s.id}.txt`, s.cap);
     const cap = `drawbox=x=0:y=ih-120:w=iw:h=120:color=black@0.62:t=fill,drawtext=fontfile=${FONT}:textfile=${SEG}/${s.id}.txt:expansion=none:fontcolor=white:fontsize=36:x=(w-text_w)/2:y=h-80`;
-    ff(["-ss", s.from.toFixed(3), "-t", len.toFixed(3), "-i", `${RAW}/${s.src}.webm`, "-vf", `setpts=PTS/${speed.toFixed(4)},fps=30,scale=1920:1080:flags=lanczos,${cap},fade=t=in:st=0:d=0.25`, "-t", dur.toFixed(3), ...enc, out]);
+    ff(["-ss", s.from.toFixed(3), "-t", len.toFixed(3), "-i", `${RAW}/${s.src}.webm`, "-vf", `setpts=PTS/${speed.toFixed(4)},fps=30,${s.crop ? `crop=${s.crop},` : ""}scale=1920:1080:flags=lanczos,${cap},fade=t=in:st=0:d=0.25`, "-t", dur.toFixed(3), ...enc, out]);
     s.dur = dur;
   }
   timeline.push({ id: s.id, start: +t.toFixed(2), end: +(t + s.dur).toFixed(2), caption: s.cap ?? null });

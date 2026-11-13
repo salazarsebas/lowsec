@@ -4,9 +4,15 @@
 
 Built from scratch for the NEAR HACKATHON (tracks: Games With Real Economies; Agents; Swarms).
 
-**Repo:** https://github.com/salazarsebas/lowsec · **Demo video (silent cut, 1:56; voiceover script in [demo/VOICEOVER.md](demo/VOICEOVER.md)):** [demo/lowsec-demo-silent.mp4](demo/lowsec-demo-silent.mp4). It shows a real testnet ambush; the AI tooltip says MOCK because the NEAR AI account has no credits yet (see "TEE status" below).
+**Repo:** https://github.com/salazarsebas/lowsec · **Demo video (silent cut, 2:02, redesigned UI; voiceover script in [demo/VOICEOVER.md](demo/VOICEOVER.md)):** [demo/lowsec-demo-silent.mp4](demo/lowsec-demo-silent.mp4). It shows a real testnet ambush; the AI tooltip says MOCK fallback because the NEAR AI account has no credits yet (see "TEE status" below).
 
 ![ambush](docs/screenshots/04-ambush.png)
+
+**The look:** a full-screen star map with glass HUD panels, in the visual language of EVE Frontier and Elite Dangerous: EVE security colours for lane danger, one signal orange for the next action, sci-fi type, sound effects, and an ambush you feel (hit-stop, shockwave, "CONVOY INTERCEPTED" with the loss counted up). Design system: [docs/DESIGN.md](docs/DESIGN.md).
+
+| Before (v0.3) | After (redesign) |
+|---|---|
+| ![before](docs/screenshots/before-redesign.png) | ![after](docs/screenshots/after-redesign.png) |
 
 ## Run it (one command)
 ```bash
@@ -23,10 +29,10 @@ pnpm dev        # Node server (relayer + AI haulers + Council) on :8787, game on
 |---|---|---|
 | 1 | Open http://localhost:3000, type a name, press **Play** | "Welcome name.lowsec.testnet — no wallet, no gas", 500 ◎ gold, a tx link. The account is a real sub-account with a function-call key created in your browser. No popups. |
 | 2 | Follow the 3-step hint: **Buy** ore in Mina (where it is made, so cheapest) | The step ticks off, your NEP-245 ore balance goes up, and a meta-tx link appears (the relayer paid the gas) |
-| 3 | Pick **Lowsec** to Forja, press **Depart** | Your convoy moves along the dashed red lane. The panel shows ambush chance 8%, or 20%+ when a raid is posted (☠×n) |
-| 4 | Wait about 10 s | Either "Arrived … · docking fee N◎ burned", or the hero moment: an explosion, screen shake, **"AMBUSHED by …"** and "−N ⛏ BURNED". The 🔥 cargo-burned counter goes up, and the tx shows an `mt_burn` event with memo `ambush_destroyed` |
+| 3 | Pick **Lowsec** to Forja, press **Depart** | Your convoy (an orange chevron with a trail) moves along the glowing red Lowsec lane. Hover any lane first to see its ambush risk, ETA and expected profit; risk is 8%, or 20%+ when raiders are posted (red blips on the lane) |
+| 4 | Wait about 10 s | Either "Arrived … · docking fee N◎ burned", or the hero moment: a flash and shockwave on the map, screen shake, a full-screen **"CONVOY INTERCEPTED"** with burned / looted / delivered counted up (click or wait 2.5 s to dismiss). The cargo-burned counter goes up, and the tx shows an `mt_burn` event with memo `ambush_destroyed` |
 | 5 | Hover an AI trader (**Kestrel**, **Vex**, **Moss**, **Ryo**) on the map | Its current AI strategy with in-character reasoning, the latest rule-based move, a **MOCK · not verified** badge (or **TEE verified ✓** with a key), and a link to their `record_decision` tx |
-| 6 | Check the right column | 📜 Contract of the day (progress bar), 🏆 richest pilots with gold gained this epoch, the activity feed |
+| 6 | Check the right column | Your hold, Contract of the day (progress bar), richest pilots with gold gained this epoch, the AI traders with their strategy and AI seal, the activity feed |
 | 7 | **Deposit from any chain** → Get quote | A real NEAR Intents 1Click quote (`dry: true`), e.g. "10 USDC on Base → 2.9 NEAR". It is labelled QUOTE ONLY and nothing executes |
 | 8 | **Economic Report** tab | Live faucets and sinks (including docking fees), Gini, cargo burned, growth per epoch, and the Council panel with the exact inputs from the `council_signal` view (window, players, hold reason) |
 | 9 | **Fast-forward** → Simulate 4 weeks | 120 simulated players: Council vs no Council vs v0.1 rules, plus the faucet multiplier the Council chose each day |
@@ -67,7 +73,7 @@ Expected terminal output for `pnpm sim --weeks 4` (seed 42, abridged):
 | Council explanation must match the rule's direction, or the rule text is used | [apps/server/src/agents/council.ts:117](apps/server/src/agents/council.ts#L117) |
 | Progressive sink: docking fee on gold above 400 | [contracts/lowsec/src/lib.rs:371](contracts/lowsec/src/lib.rs#L371) |
 | NEAR Intents 1Click quote, `dry: true` (quote only) | [apps/server/src/extras.ts:88](apps/server/src/extras.ts#L88) |
-| Open agent API for external agents with their own NEAR account | [apps/server/src/index.ts:141](apps/server/src/index.ts#L141), [examples/external-agent.mjs:10](examples/external-agent.mjs#L10) |
+| Open agent API for external agents with their own NEAR account | [apps/server/src/index.ts:161](apps/server/src/index.ts#L161), [examples/external-agent.mjs:10](examples/external-agent.mjs#L10) |
 
 Line numbers are as of the latest commit.
 

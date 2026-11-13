@@ -25,8 +25,8 @@ export function Onboarding({ s }: { s: State }) {
   const best = bestSale(s, p.town);
   const steps = [
     { t: <>Buy <GoodIcon good={home} size={13} /> {home} at {TOWN_LABEL[TOWNS[p.town]]}</>, d: <>{TOWN_LABEL[TOWNS[p.town]]} makes {home}, so it&apos;s cheapest here. Hit <b>Buy</b>.</> },
-    { t: "Choose a lane", d: <>Safe is slow with a big toll. <b className="lowsec-txt">Lowsec</b> is 3× faster, but raiders lurk. Then <b>Depart</b>.</> },
-    { t: <>Sell where it&apos;s scarce</>, d: p.haul ? "Convoy in transit. Arrival settles on-chain." : <>Towns that don&apos;t make a good pay more{best ? <> ({TOWN_LABEL[TOWNS[best.town]]} pays {best.bid} for {home})</> : null}. Hit <b>Sell all</b>.</> },
+    { t: "Pick a lane", d: <>Safe is slow with a big toll. <b className="lowsec-txt">Lowsec</b> is 3× faster, but raiders lurk. Then <b>Depart</b>.</> },
+    { t: "Sell where scarce", d: p.haul ? "Convoy in transit. Arrival settles on-chain." : <>Towns that don&apos;t make a good pay more{best ? <> ({TOWN_LABEL[TOWNS[best.town]]} pays {best.bid} for {home})</> : null}. Hit <b>Sell all</b>.</> },
   ];
   return (
     <div className="tracker" data-step={step}>

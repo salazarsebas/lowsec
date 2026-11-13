@@ -9,7 +9,7 @@ const EN = {
   title: "This is Lowsec: a space-trading economy on NEAR where players and AI traders share one market.",
   login: "No wallet. No seed phrase. Type a name, and you get a real NEAR account. Every move after that is gasless.",
   haul: "Buy ore where it's cheap, sell where it's scarce. The safe lane is slow but safe. Lowsec is three times faster, but raiders camp it.",
-  ambush: "And there it is: ambushed. Part of the cargo is burned, part goes to the raider who staked gold on this lane. That burn is a real sink.",
+  ambush: "Lowsec it is. Ten seconds out, and there it is: convoy intercepted. Part of the cargo is burned, part goes to the raider who camped this lane. That burn is a real sink, and the burned counter never goes down.",
   tooltip: tee
     ? "You compete with four AI traders. Each picks its strategy with a NEAR AI model running in a TEE, and the attestation goes on-chain. Moves in between are cheap rules."
     : "You compete with four AI traders. Each picks its strategy with a NEAR AI model, and the decision hash goes on-chain. Here it runs in clearly labelled mock mode.",
@@ -24,7 +24,7 @@ const ES = {
   title: "Esto es Lowsec: una pequeña economía de comercio espacial en NEAR, donde jugadores y traders de IA comparten un mercado.",
   login: "Sin wallet. Sin frase semilla. Escribes un nombre y tienes una cuenta NEAR real. Cada jugada después no paga gas.",
   haul: "Compra mineral donde es barato y véndelo donde escasea. La ruta segura es lenta pero sin riesgo. Lowsec es tres veces más rápida, pero hay piratas acechando.",
-  ambush: "Y ahí está: emboscada. Parte de la carga se quema y parte se la lleva el pirata que apostó oro en esta ruta. Esa quema es un sumidero real.",
+  ambush: "Vamos por Lowsec. Diez segundos de viaje y ahí está: convoy interceptado. Parte de la carga se quema y parte se la lleva el pirata que acechaba esta ruta. Esa quema es un sumidero real, y el contador de carga quemada nunca baja.",
   tooltip: tee
     ? "Compites con cuatro traders de IA. Cada uno elige su estrategia con un modelo de NEAR AI en un TEE, y la atestación queda on-chain. Las jugadas intermedias son reglas baratas."
     : "Compites con cuatro traders de IA. Cada uno elige su estrategia con un modelo de NEAR AI, y el hash de la decisión queda on-chain. Aquí corre en modo mock, claramente etiquetado.",

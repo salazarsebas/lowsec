@@ -52,7 +52,7 @@ export default function Home() {
   }, [play, joined, !!s, !!session, step]);
 
   return (
-    <main className={play ? `game play${session ? " in" : " out"}${joined ? " joined" : ""}` : "game page"}>
+    <main className={play ? `game play${session ? " in" : " out"}${joined ? " joined" : ""}${g.banner ? " alerting" : ""}` : "game page"}>
       <HudTop s={s} session={session} tab={tab} setTab={g.setTab} ledger={ledger} toggleLedger={() => setLedger((x) => !x)} logout={() => (clearSession(), g.setSession(null))} />
       <Toasts toasts={g.toasts} dismiss={g.dismiss} explorer={explorer} />
 
@@ -63,7 +63,7 @@ export default function Home() {
           <div className="stage map-holder">
             <GameMap s={s} now={g.now} blasts={g.blasts} shake={g.shake} fullBleed insets={insets} burnCounter={session ? "top-left" : "bottom-right"} legend={!session || !joined ? false : true} />
           </div>
-          {g.banner && <AmbushOverlay a={g.banner} />}
+          {g.banner && <AmbushOverlay a={g.banner} onDismiss={g.dismissBanner} />}
           {g.payoff && <PayoffReceipt p={g.payoff} />}
 
           {!session ? (

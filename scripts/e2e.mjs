@@ -11,7 +11,7 @@ const log = (...a) => console.log(new Date().toLocaleTimeString("en-GB"), ...a);
 
 const browser = await chromium.launch();
 const mk = async () => {
-  const p = await (await browser.newContext({ viewport: { width: 1440, height: 1000 } })).newPage();
+  const p = await (await browser.newContext({ viewport: { width: 1920, height: 1080 } })).newPage();
   p.on("pageerror", (e) => log("PAGE ERROR", e.message));
   return p;
 };
@@ -83,9 +83,9 @@ for (let run = 1; run <= MAX_RUNS && !ambushed; run++) {
   ]);
   if (r === "ambush") {
     ambushed = true;
-    await page.waitForTimeout(350);
-    await page.locator(".map-holder").screenshot({ path: `${OUT}/04-ambush.png` });
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1500); // let the alert's numbers count up (it auto-dismisses at 2.5 s)
+    await page.screenshot({ path: `${OUT}/04-ambush.png` });
+    await page.waitForTimeout(300);
     await shot("04b-ambush-full");
     log(`run ${run}: AMBUSHED —`, await toast());
   } else log(`run ${run}:`, await toast());

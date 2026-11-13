@@ -1,32 +1,30 @@
 {
-  "total": 115.72,
-  "ambushRun": 2,
+  "total": 122.28,
+  "ambushRun": 1,
   "source": {
-    "landing": 28.716,
-    "login": 31.217,
-    "joined": 45.275,
-    "run1": 47.838,
-    "depart1": 62.003,
-    "run2": 75.558,
-    "depart2": 89.187,
-    "ambush": 95.905,
-    "ambush_end": 101.908,
-    "tooltip": 109.3,
-    "tooltip_end": 122.02,
-    "intents": 123.125,
-    "intents_end": 129.57,
-    "report": 132.147,
-    "report_end": 151.792,
-    "ff": 154.604,
-    "ff_end": 166.437,
-    "pilot": "pilot90338.lowsec.testnet",
+    "landing": 27.756,
+    "login": 30.258,
+    "joined": 46.233,
+    "run1": 48.853,
+    "depart1": 68.684,
+    "ambush": 81.96,
+    "ambush_end": 87.963,
+    "tooltip": 97.672,
+    "tooltip_end": 110.41,
+    "intents": 112.4,
+    "intents_end": 119.942,
+    "report": 124.573,
+    "report_end": 142.605,
+    "ff": 145.956,
+    "ff_end": 158.324,
+    "pilot": "pilot94519.lowsec.testnet",
     "raiders": [
-      "raider90338x0.lowsec.testnet",
-      "raider90338x1.lowsec.testnet",
-      "raider90338x2.lowsec.testnet"
+      "raider94519x0.lowsec.testnet",
+      "raider94519x1.lowsec.testnet",
+      "raider94519x2.lowsec.testnet"
     ],
     "ambushed": true,
-    "recordedAt": "2026-11-12T23:23:30.597Z"
+    "recordedAt": "2026-11-13T20:48:58.862Z"
   },
   "segments": [
     {
@@ -56,43 +54,43 @@
     {
       "id": "ambush",
       "start": 35,
-      "end": 47.72,
+      "end": 54.28,
       "caption": "Ambushed: part of the cargo burns on-chain, part goes to the raider"
     },
     {
       "id": "tooltip",
-      "start": 47.72,
-      "end": 59.72,
-      "caption": "4 AI traders: strategy per epoch, hash on-chain (MOCK: no NEAR AI key yet)"
+      "start": 54.28,
+      "end": 66.28,
+      "caption": "4 AI traders: strategy per epoch, hash on-chain (MOCK fallback: NEAR AI credits pending)"
     },
     {
       "id": "report",
-      "start": 59.72,
-      "end": 75.72,
+      "start": 66.28,
+      "end": 82.28,
       "caption": "Economic Report from the contract · Council: one public rule, max 10%/epoch"
     },
     {
       "id": "ff",
-      "start": 75.72,
-      "end": 87.72,
+      "start": 82.28,
+      "end": 94.28,
       "caption": "Fast-forward 4 weeks in the simulator: the same rules as the contract"
     },
     {
       "id": "agent",
-      "start": 87.72,
-      "end": 99.72,
+      "start": 94.28,
+      "end": 106.28,
       "caption": "Real testnet run: an outside agent trading with its own NEAR account"
     },
     {
       "id": "intents",
-      "start": 99.72,
-      "end": 107.72,
+      "start": 106.28,
+      "end": 114.28,
       "caption": "NEAR Intents 1Click: live cross-chain deposit quote (quote only)"
     },
     {
       "id": "close",
-      "start": 107.72,
-      "end": 115.72,
+      "start": 114.28,
+      "end": 122.28,
       "caption": null
     }
   ]

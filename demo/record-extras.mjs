@@ -10,6 +10,7 @@ const b = await chromium.launch();
 const card = await (await b.newContext({ viewport: { width: 1920, height: 1080 } })).newPage();
 for (const k of ["title", "close"]) {
   await card.goto(`file://${resolve("demo/assets/card.html")}?k=${k}`);
+  await card.evaluate(() => document.fonts.ready);
   await card.waitForTimeout(300);
   await card.screenshot({ path: `${RAW}/card-${k}.png` });
 }

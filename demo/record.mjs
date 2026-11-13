@@ -13,21 +13,15 @@ const log = (...a) => console.log(new Date().toLocaleTimeString("en-GB"), ...a);
 mkdirSync(`${RAW}/tmp`, { recursive: true });
 
 const browser = await chromium.launch();
-// 1920x1080 video; the page is zoomed 4/3 so the 1440-wide layout renders crisp at 1080p
+// 1920x1080 video at native size: the redesigned play screen is a full-viewport scene built for 1080p
 const rec = await browser.newContext({ viewport: { width: 1920, height: 1080 }, recordVideo: { dir: `${RAW}/tmp`, size: { width: 1920, height: 1080 } } });
-const ZOOM = 4 / 3;
 export const INIT = () => {
-  const Z = 4 / 3;
   const add = () => {
-    const st = document.createElement("style");
-    st.textContent = `html{zoom:${Z}}`;
-    document.head.appendChild(st);
     const c = document.createElement("div");
     c.id = "demo-cursor";
     c.style.cssText = "position:fixed;z-index:99999;width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,.9);box-shadow:0 0 0 3px rgba(62,230,255,.5);pointer-events:none;transform:translate(-50%,-50%);left:-50px;top:-50px;transition:width .1s,height .1s";
     document.documentElement.appendChild(c);
-    // clientX is in zoomed CSS px; a fixed element inside the zoomed root is scaled again, so divide back
-    addEventListener("mousemove", (e) => { c.style.left = e.clientX * (1 / Z) + "px"; c.style.top = e.clientY * (1 / Z) + "px"; }, true);
+    addEventListener("mousemove", (e) => { c.style.left = e.clientX + "px"; c.style.top = e.clientY + "px"; }, true);
     addEventListener("mousedown", () => { c.style.width = c.style.height = "11px"; }, true);
     addEventListener("mouseup", () => { c.style.width = c.style.height = "16px"; }, true);
   };
@@ -178,7 +172,8 @@ await click(page.locator("button.tab", { hasText: "Economic Report" }));
 await page.waitForSelector("text=Faucets", { timeout: 30_000 });
 mark("report");
 await page.waitForTimeout(5000);
-for (const y of [450, 900, 1350, 1800]) { await smoothScroll(y); await page.waitForTimeout(2600); }
+// the 1080p report is ~1.6 viewports tall: hold on the summary + chart, then the ledger, then the Council
+for (const y of [330, 640]) { await smoothScroll(y); await page.waitForTimeout(5200); }
 mark("report_end");
 
 // --- F. Fast-forward 4 weeks
