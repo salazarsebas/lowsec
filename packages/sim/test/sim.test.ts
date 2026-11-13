@@ -142,7 +142,7 @@ describe("v0.3 live scenario (a handful of humans)", () => {
   });
 });
 
-describe("v0.4 Council tuning (proposed)", () => {
+describe("v0.4 Council tuning (live)", () => {
   it("beats no Council on every control metric on seed 42, and on error/worst epoch/Gini over 8 seeds", async () => {
     const { COUNCIL_V04 } = await import("../src/params");
     const { controlStats } = await import("../src/stats");

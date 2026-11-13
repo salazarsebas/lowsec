@@ -1,7 +1,7 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { gini, runSim, COUNCIL_RULE, V02_NPCS } from "@lowsec/sim";
+import { gini, runSim, COUNCIL_RULE, COUNCIL_V04, V02_NPCS } from "@lowsec/sim";
 import { AGENTS_ENABLED, AGENTS_IDLE_PAUSE_MS, GUILD_ID, CONTRACT_ID, COUNCIL_ID, COUNCIL_INTERVAL_MS, EXPLORER, HAULER_INTERVAL_MS, NETWORK, OBSERVE, PORT, RELAYER_ID, RPC_URLS } from "./config.js";
 import { account, accountExists, call, rpcStatus, view } from "./chain.js";
 import { fcKey } from "./keys.js";
@@ -84,7 +84,7 @@ async function buildReport() {
   const reg = await Promise.all(all.map((p) => view<any>("get_player", { account_id: p }, 60_000).then((x) => !!x).catch(() => false)));
   const players = all.filter((_, i) => reg[i]);
   const golds = await Promise.all(players.map((p) => view<string>("mt_balance_of", { account_id: p, token_id: "gold" }).then(Number).catch(() => 0)));
-  return { economy: eco, epochs, gini: gini(golds), giniPlayers: players.length, council: councilLog, councilRule: COUNCIL_RULE, contract: CONTRACT_ID, explorer: EXPLORER };
+  return { economy: eco, epochs, gini: gini(golds), giniPlayers: players.length, council: councilLog, councilRule: eco.council_rule ?? COUNCIL_RULE, contract: CONTRACT_ID, explorer: EXPLORER };
 }
 app.get("/api/report", async (c) => c.json(await reportCache(buildReport)));
 
@@ -151,7 +151,7 @@ app.post("/api/sim", async (c) => {
   const { weeks = 1, seed = 42 } = await c.req.json<{ weeks?: number; seed?: number }>().catch(() => ({}) as any);
   const w = Math.min(Math.max(Number(weeks) || 1, 1), 8);
   const pick = (r: ReturnType<typeof runSim>) => ({ daily: r.daily.map((d) => ({ day: d.period + 1, inflationBps: d.inflationBps, supply: d.supplyEnd, faucetBps: d.faucetBps, gini: d.gini, minted: d.minted, burned: d.burned, ambushes: d.ambushes, cargoBurned: d.cargoBurnedUnits, players: d.players })), final: r.final, events: r.events.filter((e) => e.type !== "haul").slice(-12) });
-  return c.json({ weeks: w, seed, rule: COUNCIL_RULE, council: pick(runSim({ weeks: w, seed, council: true })), baseline: pick(runSim({ weeks: w, seed, council: false })), original: pick(runSim({ weeks: w, seed, council: false, params: { dockFeeBps: 0 }, population: V02_NPCS })) });
+  return c.json({ weeks: w, seed, rule: COUNCIL_RULE, council: pick(runSim({ weeks: w, seed, council: true, params: COUNCIL_V04 })), baseline: pick(runSim({ weeks: w, seed, council: false })), original: pick(runSim({ weeks: w, seed, council: false, params: { dockFeeBps: 0 }, population: V02_NPCS })) });
 });
 
 app.get("/api/feed", (c) => c.json(getFeed(100)));

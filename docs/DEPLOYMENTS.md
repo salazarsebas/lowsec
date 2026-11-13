@@ -11,7 +11,7 @@ All keys live only in `~/.near-credentials/testnet/` on the build machine. Nothi
 | NPC hauler 2 | [`hauler-2.lowsec.testnet`](https://testnet.nearblocks.io/address/hauler-2.lowsec.testnet) | registered AI agent |
 
 Live params: 1 game tick = 10 s, Lowsec lane = 1 tick, Safe lane = 3 ticks, epoch = 24 ticks (4 min).
-Current wasm sha256: `bfbf322685bf93fd248533db8192d3f5095a3a2550015a8cf2704ced0612e1d2` (built with `cargo near build non-reproducible-wasm`, near-sdk 5.30.1, cargo-near 0.23.0, rustc 1.100.0).
+Current wasm sha256: `912a9b58ca91f59a9e6d5b0843a78d968aec481f7bc14668ecc60026d878f040` (v0.4, see the last section) (built with `cargo near build non-reproducible-wasm`, near-sdk 5.30.1, cargo-near 0.23.0, rustc 1.100.0).
 
 ## Transactions (2026-11-12, Europe/Berlin)
 
@@ -117,3 +117,11 @@ Code-only redeploy (state kept): `council_signal` subtracts the window's `minted
 - 1) attestation: **OK**. Gateway TCB `UpToDate` with attested TLS binding; model `z-ai/glm-5.3-flash` TCB `UpToDate`, GPU evidence present.
 - 2) inference: **FAILED, HTTP 402 "No spending limit configured. Please contact support to set up credits."** The same result for 4 different models: it is the account, not the model.
 - So there is no verified decision yet: no `provider_tee` signature exists, and no "TEE verified" `record_decision` tx. The server runs with the key and falls back per decision to the labelled MOCK policy (`/api/health` → `ai.health.lastError`).
+
+## v0.4 — Council retune, state kept (2026-11-13, 22:51 CET)
+Code upgrade with **no state-layout change** (new owner-only method `set_council_params`, rule text built from the live params), deployed and applied in **one atomic tx** from `lowsec.testnet`: `DeployContract` + `set_council_params(gain: 3, max_faucet_bps: 10000)`. Script: [`scripts/upgrade-v04.mjs`](../scripts/upgrade-v04.mjs).
+- tx: [4M3eDULy…](https://testnet.nearblocks.io/txns/4M3eDULyukMe1TEAXTeTLXm4rpsoM4zGwaX9vPUnbxj5) (wasm sha256 `912a9b58…78f040`, rustc 1.100.0, cargo-near 0.23.0)
+- state check before → after the tx (same script): 87 players → 87, epoch 347 → 347, epoch records 74 → 74, `hauler-1` 4,710 ◎ → 4,710, Guild 80,505 ◎ → 80,505; gold supply 139,043 → 138,871 (a normal buy burned gold between the two reads); `council_gain` 2 → 3, `council_max_faucet_bps` 11,000 → 10,000; faucet stayed 104.99% (the method never moves it).
+- `set_council_params` is owner-only and bounded: gain 1..=10, ceiling above the floor and **at most 110%**, the ±10%/epoch bound is untouched. Contract tests: `owner_retunes_council_to_v04_and_state_is_kept`, `faucet_above_new_ceiling_walks_down_within_the_bound`, `only_owner_retunes_council`, `council_ceiling_cannot_be_raised_above_v03`.
+- `Params::default` (a fresh `new`) still has the v0.3 constants, so the TS↔Rust parity vectors are unchanged.
+- First Council turn under v0.4 (epoch 348, 22:54 CET): `council_update(faucet_bps: 10000)`, 104.99% → 100% (a −4.99% step, inside the ±10% bound, down to the new ceiling): [GZTb7kFD…](https://testnet.nearblocks.io/txns/GZTb7kFDHfbgANFduYTEz3a7QWEizQmNSJCefghh8DcR). Later turns hold at 100% (e.g. [E3gAuHeW…](https://testnet.nearblocks.io/txns/E3gAuHeWEP1AYr9kmZrLxqdujLgZC9G2N6HGcBVPwHUq), inflation 0.39%/epoch < 1% target, already at the ceiling).

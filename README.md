@@ -4,9 +4,11 @@
 
 Built from scratch for the NEAR HACKATHON (tracks: Games With Real Economies; Agents; Swarms).
 
-**Repo:** https://github.com/salazarsebas/lowsec · **Demo video (silent cut, 2:02, redesigned UI; voiceover script in [demo/VOICEOVER.md](demo/VOICEOVER.md)):** [demo/lowsec-demo-silent.mp4](demo/lowsec-demo-silent.mp4). It shows a real testnet ambush; the AI tooltip says MOCK fallback because the NEAR AI account has no credits yet (see "TEE status" below).
+**Repo:** https://github.com/salazarsebas/lowsec · **Demo video (silent cut, 1:58, 1920x1080; voiceover script in [demo/VOICEOVER.md](demo/VOICEOVER.md)):** [demo/lowsec-demo-silent.mp4](demo/lowsec-demo-silent.mp4). It shows a real testnet ambush and ends on that ambush tx in a public explorer (one 6 s chain wait is cut and marked on screen; sped-up clips say so); the AI tooltip says MOCK fallback because the NEAR AI account has no credits yet (see "TEE status" below).
 
-![ambush](docs/screenshots/04-ambush.png)
+[![A real ambush on testnet. Click to open the demo video](docs/screenshots/04-ambush.png)](demo/lowsec-demo-silent.mp4)
+
+▶ **[Watch the demo video (MP4, 1920x1080)](demo/lowsec-demo-silent.mp4)**
 
 **The look:** a full-screen star map with glass HUD panels, in the visual language of EVE Frontier and Elite Dangerous: EVE security colours for lane danger, one signal orange for the next action, sci-fi type, sound effects, and an ambush you feel (hit-stop, shockwave, "CONVOY INTERCEPTED" with the loss counted up). Design system: [docs/DESIGN.md](docs/DESIGN.md).
 
@@ -60,20 +62,21 @@ Expected terminal output for `pnpm sim --weeks 4` (seed 42, abridged):
 |---|---|
 | NEP-245 multi-token (gold, ore, parts, fuel in one contract) | [contracts/lowsec/src/mt.rs:90](contracts/lowsec/src/mt.rs#L90), [contracts/lowsec/src/mt.rs:152](contracts/lowsec/src/mt.rs#L152) |
 | NEP-297 events (`nep245` mt_mint / mt_burn / mt_transfer + `lowsec` game events) | [contracts/lowsec/src/events.rs:17](contracts/lowsec/src/events.rs#L17) |
-| Cargo destroyed in an ambush is burned (`mt_burn`, memo `ambush_destroyed`) | [contracts/lowsec/src/lib.rs:388](contracts/lowsec/src/lib.rs#L388) |
-| Sub-accounts: `name.lowsec.testnet` created by the contract | [contracts/lowsec/src/lib.rs:244](contracts/lowsec/src/lib.rs#L244) |
-| Function-call access key with allowance, limited to game methods | [contracts/lowsec/src/lib.rs:252](contracts/lowsec/src/lib.rs#L252), [apps/server/src/setup-keys.ts:35](apps/server/src/setup-keys.ts#L35) |
-| Key generated in the browser (never leaves it) | [apps/web/lib/near.ts:33](apps/web/lib/near.ts#L33) |
-| NEP-366 meta-transactions: browser signs a DelegateAction | [apps/web/lib/near.ts:56](apps/web/lib/near.ts#L56) |
-| Relayer pays gas, with a policy (target, sender, method, zero deposit, gas cap) | [apps/server/src/relayer.ts:21](apps/server/src/relayer.ts#L21), [apps/server/src/relayer.ts:48](apps/server/src/relayer.ts#L48) |
-| Council bounded on-chain (±10%/epoch, [70%,110%], once per epoch) | [contracts/lowsec/src/lib.rs:453](contracts/lowsec/src/lib.rs#L453) |
-| Public rule computed by the contract (inputs exposed) | [contracts/lowsec/src/lib.rs:539](contracts/lowsec/src/lib.rs#L539) |
-| AI decisions anchored on-chain (payload hash + attestation hash + signature kind) | [contracts/lowsec/src/lib.rs:471](contracts/lowsec/src/lib.rs#L471) |
-| NEAR AI Cloud TEE inference (`@nearai/inference-sdk`) + `verifyResponse` | [apps/server/src/nearai.ts:85](apps/server/src/nearai.ts#L85), [apps/server/src/nearai.ts:129](apps/server/src/nearai.ts#L129) |
+| Cargo destroyed in an ambush is burned (`mt_burn`, memo `ambush_destroyed`) | [contracts/lowsec/src/lib.rs:428](contracts/lowsec/src/lib.rs#L428) |
+| Sub-accounts: `name.lowsec.testnet` created by the contract | [contracts/lowsec/src/lib.rs:261](contracts/lowsec/src/lib.rs#L261) |
+| Function-call access key with allowance, limited to game methods | [contracts/lowsec/src/lib.rs:269](contracts/lowsec/src/lib.rs#L269), [apps/server/src/setup-keys.ts:36](apps/server/src/setup-keys.ts#L36) |
+| Key generated in the browser (never leaves it) | [apps/web/lib/near.ts:37](apps/web/lib/near.ts#L37) |
+| NEP-366 meta-transactions: browser signs a DelegateAction | [apps/web/lib/near.ts:60](apps/web/lib/near.ts#L60) |
+| Relayer pays gas, with a policy (target, sender, method, zero deposit, gas cap) | [apps/server/src/relayer.ts:42](apps/server/src/relayer.ts#L42), [apps/server/src/relayer.ts:71](apps/server/src/relayer.ts#L71) |
+| Council bounded on-chain (±10%/epoch, [70%,100%] in v0.4, once per epoch) | [contracts/lowsec/src/lib.rs:493](contracts/lowsec/src/lib.rs#L493) |
+| Council v0.4 retune with state kept: owner-only, bounded `set_council_params` (ceiling ≤ 110%, gain 1–10) | [contracts/lowsec/src/lib.rs:569](contracts/lowsec/src/lib.rs#L569) |
+| Public rule computed by the contract (inputs exposed) | [contracts/lowsec/src/lib.rs:620](contracts/lowsec/src/lib.rs#L620) |
+| AI decisions anchored on-chain (payload hash + attestation hash + signature kind) | [contracts/lowsec/src/lib.rs:511](contracts/lowsec/src/lib.rs#L511) |
+| NEAR AI Cloud TEE inference (`@nearai/inference-sdk`) + `verifyResponse` | [apps/server/src/nearai.ts:126](apps/server/src/nearai.ts#L126), [apps/server/src/nearai.ts:139](apps/server/src/nearai.ts#L139) |
 | One-command TEE check: Gateway + model attestation, then a `provider_tee` signature | [apps/server/src/tee-check.ts:22](apps/server/src/tee-check.ts#L22) |
-| Clearly labelled MOCK provider (no key) and MOCK fallback (NEAR AI error) | [apps/server/src/nearai.ts:73](apps/server/src/nearai.ts#L73), [apps/server/src/nearai.ts:118](apps/server/src/nearai.ts#L118) |
+| Clearly labelled MOCK provider (no key) and MOCK fallback (NEAR AI error) | [apps/server/src/nearai.ts:83](apps/server/src/nearai.ts#L83), [apps/server/src/nearai.ts:128](apps/server/src/nearai.ts#L128) |
 | Council explanation must match the rule's direction, or the rule text is used | [apps/server/src/agents/council.ts:117](apps/server/src/agents/council.ts#L117) |
-| Progressive sink: docking fee on gold above 400 | [contracts/lowsec/src/lib.rs:371](contracts/lowsec/src/lib.rs#L371) |
+| Progressive sink: docking fee on gold above 400 | [contracts/lowsec/src/lib.rs:411](contracts/lowsec/src/lib.rs#L411) |
 | NEAR Intents 1Click quote, `dry: true` (quote only) | [apps/server/src/extras.ts:88](apps/server/src/extras.ts#L88) |
 | Open agent API for external agents with their own NEAR account | [apps/server/src/index.ts:181](apps/server/src/index.ts#L181), [examples/external-agent.mjs:10](examples/external-agent.mjs#L10) |
 
@@ -86,7 +89,7 @@ Line numbers are as of the latest commit.
 | Gold sinks | NPC sell orders (buying cargo), lane tolls (safe 12, Lowsec 3), raid fees (10% of the stake), **docking fee**: 5% of the gold you hold above 400, charged on every arrival (the Guild's float is exempt) |
 | Item sinks | Cargo destroyed in Lowsec ambushes (`mt_burn`), town consumption (stocks revert to a goal) |
 | Competition (v0.3) | **4 AI traders** (Kestrel, Vex, Moss, Ryo) + **the Guild**, a rule-based market maker (no AI) that restocks the scarcest town over Safe lanes. Every NPC takes a turn about every 10 s; a turn is one `turn` call (sell all, buy, depart). Traders see cargo already en route, so they don't all dump into one town |
-| Council rule | `faucet_next = clamp(faucet × (1 − 2 × (inflation − 1%)), ±10%/epoch, [70%, 110%])`. *inflation* is the mean gold-supply growth per epoch over the last 3 closed epochs. Below 5 players the rule **holds**, because one sale would swing the signal |
+| Council rule (v0.4, live) | `faucet_next = clamp(faucet × (1 − 3 × (inflation − 1%)), ±10%/epoch, [70%, 100%])`. Live on `lowsec.testnet` since 2026-11-13 22:51 CET via a state-keeping upgrade + owner-only `set_council_params` ([tx](https://testnet.nearblocks.io/txns/4M3eDULyukMe1TEAXTeTLXm4rpsoM4zGwaX9vPUnbxj5)); v0.3 was gain 2, [70%, 110%]. The contract's `economy().council_rule` prints the live constants. *inflation* is the mean gold-supply growth per epoch over the last 3 closed epochs. Below 5 players the rule **holds**, because one sale would swing the signal |
 | Who decides | The contract computes the number (`council_signal`, `rule_next_faucet_bps`) and rejects anything outside the bound. The LLM only writes the explanation, and the attestation hash of that explanation is recorded on-chain |
 | Rules | [`packages/sim/src/params.ts`](packages/sim/src/params.ts) + [`pricing.ts`](packages/sim/src/pricing.ts) + [`council.ts`](packages/sim/src/council.ts), mirrored in [`contracts/lowsec/src/rules.rs`](contracts/lowsec/src/rules.rs). A parity test runs the Rust code on vectors generated by the TS code |
 
@@ -105,7 +108,8 @@ Mean abs error is the mean |epoch inflation − 1%| from epoch 2 on (epoch 1 is 
 | v0.1 rules (2 NPCs, no Council, no dock fee) | 3.37% | 2.79 pp | 13.09% | 67% | 0.181 | 100% (fixed) | — |
 | v0.2 (2 NPCs, Council + dock fee) | 2.81% | 2.43 pp | 11.16% | 64% | 0.141 | 110.00% | 0% |
 | v0.3 NPCs, no Council | 1.50% | 1.57 pp | 5.46% | 70% | 0.138 | 100% (fixed) | — |
-| v0.3 NPCs + Council (DEFAULT) | 1.61% | 1.36 pp | 5.24% | 71% | 0.143 | 110.00% | 0% |
+| v0.3 NPCs + Council v0.3 (previous) | 1.61% | 1.36 pp | 5.24% | 71% | 0.143 | 110.00% | 0% |
+| v0.3 NPCs + **Council v0.4 (live)** | 1.45% | 1.48 pp | 5.20% | 71% | 0.133 | 100.00% | 0% |
 
 **Live population** (3 humans who act now and then, no wave: what a judge sees on testnet):
 
@@ -115,9 +119,11 @@ Mean abs error is the mean |epoch inflation − 1%| from epoch 2 on (epoch 1 is 
 | v0.2 (2 NPCs, Council + dock fee) | -0.45% | 10.08 pp | 26.83% | 12% | 0.100 | 90.24% | 1% |
 | v0.2 as it ran live (2 NPCs acting every ~4 ticks) | 2.66% | 4.67 pp | 45.19% | 38% | 0.035 | 78.23% | 11% |
 | v0.3 NPCs, no Council | 1.11% | 0.99 pp | 4.94% | 93% | 0.069 | 100% (fixed) | — |
-| v0.3 NPCs + Council (DEFAULT) | 0.59% | 1.15 pp | 3.51% | 82% | 0.080 | 89.88% | 0% |
+| v0.3 NPCs + Council v0.3 (previous) | 0.59% | 1.15 pp | 3.51% | 82% | 0.080 | 89.88% | 0% |
+| v0.3 NPCs + **Council v0.4 (live)** | 0.70% | 1.09 pp | 3.64% | 83% | 0.074 | 91.84% | 0% |
 
 **Tradeoffs, plainly.**
+- Why v0.4 (gain 3, ceiling 100%): the 110% ceiling let the Council pay traders *more* than list price whenever growth dipped, which raised Gini. Capped at 100% the Council can only tighten. On this sweep's metrics v0.4 lowers Gini in both populations (0.133 vs 0.143; 0.074 vs 0.080), lowers mean inflation in the launch wave (1.45% vs 1.61%) and lowers mean error live (1.09 vs 1.15 pp), but **mean error in the launch wave is higher** (1.48 vs 1.36 pp). On the Fast-forward page's daily metrics (0–1% band, seed 42) v0.4 beats v0.3 on four of five and ties the worst day; over 8 seeds it is 1 pp lower on band time than no Council. Both views are in the repo (`pnpm --filter @lowsec/sim sweep`, `pnpm sim --weeks 4`).
 - The big win is the NPC cast, not the Council: in the live population v0.3 *without* a Council already lands 93% of epochs in band. With the Council, the worst epoch improves (3.5% vs 4.9%), but mean error is slightly worse (1.15 vs 0.99 pp) and Gini slightly higher (0.080 vs 0.069), because it keeps nudging a market that is already near target. In the launch population the Council helps on every metric except Gini (0.143 vs 0.138).
 - Why grants are excluded (v0.3.1): live, 4 pilots joining in one epoch added +2,000 ◎ of grants (+4.5% supply), and the Council cut the faucet down to its 70% floor for it, although trading alone was near 1%. With the old signal the launch sweep spent 32% of epochs at the floor; with grants excluded it spends 0%. The cost, plainly: in the launch wave the Council now ends at its 110% ceiling and mean total inflation rises (1.61% vs 1.27%), because grant-driven growth is no longer something the faucet fights. Mean abs error still improves (1.36 vs 1.47 pp). The live population is unchanged (few grants).
 - The Guild's 30,000 ◎ float is disclosed everywhere (Report ledger, README, `guild()` view). It is genesis supply, it pays tolls like anyone, and it only uses Safe lanes, so it never feeds raiders.
@@ -136,12 +142,14 @@ UI design system (palette, type, components, sound, credits): [docs/DESIGN.md](d
 
 ## Repo and tests
 ```
-packages/sim       deterministic economy sim, CLI, sweep            pnpm test → 17 tests
-contracts/lowsec   Rust contract (near-sdk 5.30.1)                   cargo test → 26 unit (incl. TS↔Rust parity) + 1 near-workspaces sandbox test
-apps/server        Hono: relayer, onboarding, AI haulers, Council, open agent API, 1Click quote    8 tests
+packages/sim       deterministic economy sim, CLI, sweep            pnpm test → 20 tests
+contracts/lowsec   Rust contract (near-sdk 5.30.1)                   cargo test → 36 unit (incl. TS↔Rust parity) + 1 near-workspaces sandbox test
+apps/server        Hono: relayer, onboarding, AI haulers, Council, open agent API, 1Click quote    25 tests
 apps/web           Next.js 16 game UI (signs meta-txs in the browser, no wallet)
 examples/          external-agent.mjs
-scripts/           e2e.mjs (playwright), check-secrets.sh (gitleaks pre-commit), testnet-smoke.sh
+scripts/           e2e.mjs (playwright), check-secrets.sh (gitleaks pre-commit), testnet-smoke.sh,
+                   readme-lines.mjs (regenerates the file:line links below; --check fails if stale), upgrade-v04.mjs
+demo/              record.mjs → assemble.mjs → make-voiceover.mjs (silent video, timeline.json, VOICEOVER.md/.es.md)
 ```
 
 ## Hosting later (not deployed yet)

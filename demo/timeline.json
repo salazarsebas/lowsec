@@ -1,30 +1,39 @@
 {
-  "total": 122.28,
-  "ambushRun": 1,
+  "total": 118.01,
+  "ambushRun": 4,
   "source": {
-    "landing": 27.756,
-    "login": 30.258,
-    "joined": 46.233,
-    "run1": 48.853,
-    "depart1": 68.684,
-    "ambush": 81.96,
-    "ambush_end": 87.963,
-    "tooltip": 97.672,
-    "tooltip_end": 110.41,
-    "intents": 112.4,
-    "intents_end": 119.942,
-    "report": 124.573,
-    "report_end": 142.605,
-    "ff": 145.956,
-    "ff_end": 158.324,
-    "pilot": "pilot94519.lowsec.testnet",
+    "landing": 37.486,
+    "login": 39.987,
+    "joined": 55.738,
+    "run1": 59.239,
+    "depart1": 114.429,
+    "run2": 141.534,
+    "depart2": 174.892,
+    "run3": 289.09,
+    "depart3": 313.287,
+    "run4": 347.14,
+    "depart4": 371.741,
+    "ambush": 386.588,
+    "ambush_end": 392.594,
+    "tooltip": 394.504,
+    "tooltip_end": 407.493,
+    "intents": 409.835,
+    "intents_end": 418.273,
+    "report": 422.094,
+    "report_end": 440.286,
+    "ff": 444.342,
+    "ff_end": 456.101,
+    "explorer": 459.235,
+    "explorer_end": 466.237,
+    "pilot": "pilot26069.lowsec.testnet",
     "raiders": [
-      "raider94519x0.lowsec.testnet",
-      "raider94519x1.lowsec.testnet",
-      "raider94519x2.lowsec.testnet"
+      "raider26069x0.lowsec.testnet",
+      "raider26069x1.lowsec.testnet",
+      "raider26069x2.lowsec.testnet"
     ],
     "ambushed": true,
-    "recordedAt": "2026-11-13T20:48:58.862Z"
+    "ambushTx": "Pm4Lje3amWvR783hhqSuMsZjvj3cv2fQYUsawHPwTtk",
+    "recordedAt": "2026-11-13T22:14:52.429Z"
   },
   "segments": [
     {
@@ -36,61 +45,68 @@
     {
       "id": "title",
       "start": 5,
-      "end": 12,
+      "end": 11,
       "caption": null
     },
     {
       "id": "login",
-      "start": 12,
-      "end": 23,
+      "start": 11,
+      "end": 21,
       "caption": "No wallet, no seed phrase, no gas: type a name and play"
     },
     {
       "id": "haul",
-      "start": 23,
-      "end": 35,
+      "start": 21,
+      "end": 34,
       "caption": "Safe lane: slow, no risk. Lowsec: 3x faster, but raiders camp it"
     },
     {
       "id": "ambush",
-      "start": 35,
-      "end": 54.28,
-      "caption": "Ambushed: part of the cargo burns on-chain, part goes to the raider"
+      "start": 34,
+      "end": 49.01,
+      "caption": "Ambushed: part of the cargo burns on-chain, part goes to the raider",
+      "skipped_s": 5.8
     },
     {
       "id": "tooltip",
-      "start": 54.28,
-      "end": 66.28,
-      "caption": "4 AI traders: strategy per epoch, hash on-chain (MOCK fallback: NEAR AI credits pending)"
+      "start": 49.01,
+      "end": 61.01,
+      "caption": "4 AI traders: decisions logged on-chain (MOCK fallback until NEAR AI credits are active)"
     },
     {
       "id": "report",
-      "start": 66.28,
-      "end": 82.28,
-      "caption": "Economic Report from the contract · Council: one public rule, max 10%/epoch"
+      "start": 61.01,
+      "end": 76.01,
+      "caption": "Economic Report from the contract · Council v0.4: one public rule, max 10%/epoch"
     },
     {
       "id": "ff",
-      "start": 82.28,
-      "end": 94.28,
-      "caption": "Fast-forward 4 weeks in the simulator: the same rules as the contract"
+      "start": 76.01,
+      "end": 84.01,
+      "caption": "Fast-forward 4 weeks: live Council v0.4 vs v0.3 vs no Council, every metric"
     },
     {
       "id": "agent",
-      "start": 94.28,
-      "end": 106.28,
+      "start": 84.01,
+      "end": 95.01,
       "caption": "Real testnet run: an outside agent trading with its own NEAR account"
     },
     {
       "id": "intents",
-      "start": 106.28,
-      "end": 114.28,
+      "start": 95.01,
+      "end": 102.01,
       "caption": "NEAR Intents 1Click: live cross-chain deposit quote (quote only)"
     },
     {
+      "id": "explorer",
+      "start": 102.01,
+      "end": 110.01,
+      "caption": "That ambush on a public explorer: cargo burned, loot sent to the raider"
+    },
+    {
       "id": "close",
-      "start": 114.28,
-      "end": 122.28,
+      "start": 110.01,
+      "end": 118.01,
       "caption": null
     }
   ]

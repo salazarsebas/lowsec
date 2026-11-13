@@ -34,8 +34,8 @@ export const ROWS: { name: string; council: boolean; params: Partial<Params>; po
   // what was actually deployed: 2 NPCs taking one action per 20 s step ≈ a trade every ~4 ticks
   { name: "v0.2 as it ran live (2 NPCs acting every ~4 ticks)", council: true, params: {}, pop: { ...V02_NPCS, aiActEveryTicks: 4 }, liveOnly: true },
   { name: "v0.3 NPCs, no Council", council: false, params: {}, pop: {} },
-  { name: "v0.3 NPCs + Council (DEFAULT, deployed)", council: true, params: {}, pop: {} },
-  { name: "v0.3 NPCs + Council v0.4 tuning (proposed)", council: true, params: COUNCIL_V04, pop: {} },
+  { name: "v0.3 NPCs + Council v0.3 (DEFAULT params, previous)", council: true, params: {}, pop: {} },
+  { name: "v0.3 NPCs + Council v0.4 tuning (live)", council: true, params: COUNCIL_V04, pop: {} },
 ];
 
 export function sweep(popName: string, extra: Partial<Population>) {

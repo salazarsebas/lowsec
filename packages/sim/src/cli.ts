@@ -75,7 +75,7 @@ if (baseline) {
   }
 }
 if (baseline) {
-  // v0.4 Council tuning (proposed, sim only): every metric, no cherry-picking. Lower is better except "in band".
+  // v0.4 Council tuning (live on testnet since 2026-11-13): every metric, no cherry-picking. Lower is better except "in band".
   const v4 = runSim({ weeks, seed, council: true, params: COUNCIL_V04, population });
   const row = (name: string, r: SimResult) => {
     const x = controlStats(r.daily, r.final.gini);
@@ -83,8 +83,8 @@ if (baseline) {
   };
   console.log("\nAll control metrics (day 2+, lower is better except band):");
   row("no Council", baseline);
-  row("Council v0.3 (deployed)", withCouncil);
-  row("Council v0.4 (proposed)", v4);
+  row("Council v0.3 (previous)", withCouncil);
+  row("Council v0.4 (live)", v4);
 }
 const out = arg("json");
 if (out) {

@@ -11,8 +11,8 @@ import "@/styles/econ.css";
 const SEEDS = [42, 1, 2, 3, 4, 5, 6, 7];
 type RunKey = "v04" | "v03" | "none" | "v01";
 const RUNS: { key: RunKey; label: string; sub: string; council: boolean; params: object; population: object }[] = [
-  { key: "v04", label: "Council v0.4", sub: "proposed tuning · sim only", council: true, params: COUNCIL_V04, population: {} },
-  { key: "v03", label: "Council v0.3", sub: "constants on testnet now", council: true, params: {}, population: {} },
+  { key: "v04", label: "Council v0.4", sub: "live on testnet", council: true, params: COUNCIL_V04, population: {} },
+  { key: "v03", label: "Council v0.3", sub: "previous (until Nov 13)", council: true, params: {}, population: {} },
   { key: "none", label: "No Council", sub: "faucet locked at 100%", council: false, params: {}, population: {} },
   { key: "v01", label: "v0.1 rules", sub: "no Council, no dock fee, 2 NPCs", council: false, params: { dockFeeBps: 0 }, population: V02_NPCS },
 ];
@@ -123,8 +123,8 @@ export function Simulate() {
             <p className="econ-ff-kicker">Run 4 weeks</p>
             <h2>What happens in 4 weeks with vs without the Council?</h2>
             <p className="muted">
-              Same sinks, faucets and players; only the Council changes. <b>v0.3</b> is what the testnet contract runs today (gain 2, faucet range 70–110%).{" "}
-              <b>v0.4</b> is the retuned proposal (gain 3, ceiling 100%: the Council can only tighten), not deployed yet. Every metric is shown for every run and coloured against &quot;No Council&quot;.
+              Same sinks, faucets and players; only the Council changes. <b>v0.4</b> is what the testnet contract runs now (gain 3, ceiling 100%: the Council can only tighten).{" "}
+              <b>v0.3</b> is the previous tuning (gain 2, faucet range 70–110%), shown for comparison. Every metric is shown for every run and coloured against &quot;No Council&quot;.
             </p>
             <div className="row-btns">
               <Button variant="primary" size="lg" icon="launch" onClick={() => go(4)}>Simulate 4 weeks</Button>
@@ -172,7 +172,7 @@ export function Simulate() {
               {table(r.stats, `Seed 42 · ${r.weeks} week${r.weeks === 1 ? "" : "s"} · green = better than No Council, red = worse`)}
               {multi && table(multi, `Average of 8 seeds (${SEEDS.join(", ")}) · ${r.weeks} week${r.weeks === 1 ? "" : "s"}`)}
               <p className="muted small ff-honest">
-                Trade-offs we know about: the deployed v0.3 cuts error and the worst day but spends more days outside the band and raises Gini, because its 110% ceiling pays traders extra when growth dips. Over 8 seeds v0.4 is 1 pp lower on band time than No Council; in a tiny live population (3 humans) its mean error is slightly higher. Day 1 is the launch wave before the first epoch closes (on the chart, excluded from stats).
+                Trade-offs we know about: the previous v0.3 cut error and the worst day but spent more days outside the band and raises Gini, because its 110% ceiling paid traders extra when growth dips. Over 8 seeds v0.4 is 1 pp lower on band time than No Council; in a tiny live population (3 humans) its mean error is slightly higher. Day 1 is the launch wave before the first epoch closes (on the chart, excluded from stats).
               </p>
               <div className="charts2">
                 <div>
@@ -185,7 +185,7 @@ export function Simulate() {
                     series={[
                       { name: "Council v0.4", color: "var(--profit)", values: v4.map((d) => d.inflationBps / 100), xs: days, fill: true },
                       { name: "No Council", color: "var(--loss)", values: nb.map((d) => d.inflationBps / 100), xs: days, dashed: true },
-                      { name: "Council v0.3 (deployed)", color: "var(--gold)", values: v3.map((d) => d.inflationBps / 100), xs: days, dashed: true },
+                      { name: "Council v0.3 (previous)", color: "var(--gold)", values: v3.map((d) => d.inflationBps / 100), xs: days, dashed: true },
                     ]}
                   />
                 </div>
@@ -203,7 +203,7 @@ export function Simulate() {
                 </div>
               </div>
               <code className="rule">{COUNCIL_RULE}</code>
-              <p className="muted small">v0.4 changes two constants of this rule (gain 2→3, ceiling 110%→100%). The contract enforces the deployed constants; v0.4 ships with the next contract init.</p>
+              <p className="muted small">Live v0.4 constants. v0.4 changed two constants (gain 2→3, ceiling 110%→100%) with a state-keeping contract upgrade on Nov 13; the contract enforces them on every Council turn.</p>
               <ul className="events">{r.runs.v04.events.filter((e) => e.type === "council").slice(-5).map((e, i) => <li key={i}>{e.text}</li>)}</ul>
             </>
           );

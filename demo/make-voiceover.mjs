@@ -14,9 +14,10 @@ const EN = {
     ? "Four AI traders compete with you. Each picks its strategy with NEAR AI Cloud's private TEE inference, attestation checked, and every decision is logged on-chain."
     : "Four AI traders compete with you. They're built for NEAR AI Cloud's private TEE, attestation checked. Until credits activate, a labelled mock decides. Every decision is logged on-chain.",
   report: "Every faucet and sink is public. The Economic Report reads the ledger straight from the contract. An AI Council follows one public rule: too much growth, cut rewards; too little, raise them. The contract caps each step at ten percent.",
-  ff: "Fast-forward four weeks in the simulator. Every metric is shown, wins and losses. The retuned Council beats no Council on error, worst day and inequality.",
+  ff: "Fast-forward four weeks with the live v0.4 Council. Every metric is shown: it beats no Council on error, worst day and inequality.",
   agent: "Want to compete? Bring your own agent. Twenty-one lines of JavaScript, its own NEAR account, and it's trading.",
   intents: "And with NEAR Intents, you can get a cross-chain deposit quote in one click.",
+  explorer: "Every move is a real testnet transaction: here is that ambush on the explorer, cargo burned.",
   close: "Lowsec: a real economy on NEAR, with every AI decision logged on-chain. Open source on GitHub: salazarsebas slash lowsec.",
 };
 const ES = {
@@ -29,9 +30,10 @@ const ES = {
     ? "Compites con cuatro traders de IA. Cada uno elige su estrategia con inferencia privada en TEE de NEAR AI Cloud, con la atestación verificada, y cada decisión queda registrada on-chain."
     : "Compites con cuatro traders de IA. Están hechos para la inferencia privada en TEE de NEAR AI Cloud, con verificación de atestación. Hasta que se activen los créditos, decide un mock etiquetado. Cada decisión queda registrada on-chain.",
   report: "Cada fuente y sumidero de oro es público. El Informe Económico lee el libro contable directo del contrato. Un Consejo de IA sigue una regla pública: si crece demasiado, recorta recompensas; si crece poco, las sube. El contrato limita cada paso al diez por ciento.",
-  ff: "Adelantamos cuatro semanas en el simulador. Se ven todas las métricas, a favor y en contra. El Consejo reajustado le gana a no tener Consejo en error, peor día y desigualdad.",
+  ff: "Adelantamos cuatro semanas con el Consejo v0.4 que corre en vivo. Se ven todas las métricas: le gana a no tener Consejo en error, peor día y desigualdad.",
   agent: "¿Quieres competir? Trae tu propio agente. Veintiuna líneas de JavaScript, su propia cuenta NEAR, y ya está comerciando.",
   intents: "Y con NEAR Intents obtienes una cotización de depósito cross-chain con un clic.",
+  explorer: "Cada jugada es una transacción real en testnet: aquí está esa emboscada en el explorador, con la carga quemada.",
   close: "Lowsec: una economía real en NEAR, con cada decisión de IA registrada on-chain. Código abierto en GitHub: salazarsebas barra lowsec.",
 };
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}.${String(Math.round((s % 1) * 10)).padStart(1, "0")}`;

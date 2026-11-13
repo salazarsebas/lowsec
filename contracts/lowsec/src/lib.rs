@@ -191,7 +191,18 @@ pub const PLAYER_METHODS: &str = "register,buy,sell,start_haul,arrive,raid,turn"
 /// NEAR given to a new player sub-account for its own storage (gas is paid by the relayer via NEP-366).
 pub const PLAYER_FUNDING: NearToken = NearToken::from_millinear(10);
 
-pub const COUNCIL_RULE: &str = "faucet_next = clamp(faucet × (1 − gain × (inflation − target)), ±10%/epoch, [70%, 110%]); inflation = mean supply growth over the last 3 epochs, excluding starter grants; hold if < 5 players";
+/// Human-readable rule with the LIVE constants (gain, step bound, faucet range) filled in from params.
+pub fn council_rule_text(p: &Params) -> String {
+    format!(
+        "faucet_next = clamp(faucet × (1 − {} × (inflation − target)), ±{}%/epoch, [{}%, {}%]); inflation = mean supply growth over the last {} epochs, excluding starter grants; hold if < {} players",
+        p.council_gain,
+        p.council_max_step_bps / 100,
+        p.council_min_faucet_bps / 100,
+        p.council_max_faucet_bps / 100,
+        p.council_window_epochs,
+        p.council_min_players
+    )
+}
 
 #[near]
 impl Lowsec {
@@ -551,6 +562,21 @@ impl Lowsec {
         self.council = account_id;
     }
 
+    /// v0.4: retune the Council's controller in place (owner only; existing state is untouched).
+    /// Only the gain and the faucet ceiling can change, inside hard limits, so the owner cannot use this
+    /// to pump payouts: the ceiling can never exceed 110% (the v0.3 value) and the ±10%/epoch bound stays.
+    /// The current faucet is NOT moved here; the Council's next turn walks it into the new range.
+    pub fn set_council_params(&mut self, gain: i64, max_faucet_bps: u64) -> Params {
+        self.assert_owner();
+        require!((1..=10).contains(&gain), "gain must be 1..=10");
+        require!(max_faucet_bps > self.params.council_min_faucet_bps && max_faucet_bps <= 11_000, "ceiling must be above the floor and at most 110%");
+        let prev = (self.params.council_gain, self.params.council_max_faucet_bps);
+        self.params.council_gain = gain;
+        self.params.council_max_faucet_bps = max_faucet_bps;
+        events::game("council_params", json!({ "prev_gain": prev.0, "prev_max_faucet_bps": prev.1, "gain": gain, "max_faucet_bps": max_faucet_bps, "rule": council_rule_text(&self.params) }));
+        self.params.clone()
+    }
+
     /// Anyone can poke the clock (closes epochs, expires raids, restocks towns).
     pub fn tick(&mut self) -> u64 {
         self.touch();
@@ -642,7 +668,7 @@ impl Lowsec {
             players: self.player_count,
             faucet_bps: p.faucet_bps,
             council: self.council.clone(),
-            council_rule: COUNCIL_RULE.to_string(),
+            council_rule: council_rule_text(p),
             rule_next_faucet_bps: self.rule_next_faucet_bps(),
             council_signal: self.council_signal(),
             towns,

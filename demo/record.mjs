@@ -96,18 +96,25 @@ await dismiss();
 // --- B/C. haul choice + ambush loop
 const haulPanel = () => page.locator(".panel", { has: page.locator("h3", { hasText: /^Haul$/ }) });
 let ambushed = false;
+let ambushTx = null;
 for (let run = 1; run <= MAX_RUNS && !ambushed; run++) {
   mark(`run${run}`);
   const inMina = (await page.locator("h3", { hasText: "Market · Mina" }).count()) > 0;
   const good = inMina ? "ore" : "parts";
   const to = inMina ? "Forja" : "Mina";
-  await page.locator("input[type=range]").first().fill("20").catch(() => {});
+  await page.locator("input[type=range]").first().fill("12").catch(() => {});
   await click(page.locator("tr", { hasText: good }).locator("button", { hasText: "Buy" }));
   log(`run ${run}: buy`, await toast());
   await dismiss();
   await page.waitForTimeout(1500);
   await haulPanel().locator("select").nth(0).selectOption(good);
   await haulPanel().locator("select").nth(1).selectOption({ label: to });
+  // the raiders camp mina-forja: make sure the route really is Mina <-> Forja before departing
+  for (let i = 0; i < 5 && !(await haulPanel().locator(".sub").innerText()).includes(to); i++) {
+    await page.waitForTimeout(600);
+    await haulPanel().locator("select").nth(1).selectOption({ label: to });
+  }
+  log(`run ${run}: route`, await haulPanel().locator(".sub").innerText());
   await moveTo(page.locator("button.route", { hasText: "Safe" }));
   await page.waitForTimeout(1300);
   await click(page.locator("button.route", { hasText: "Lowsec" }));
@@ -124,6 +131,10 @@ for (let run = 1; run <= MAX_RUNS && !ambushed; run++) {
     ambushed = true;
     mark("ambush");
     log(`run ${run}: AMBUSHED —`, await toast());
+    // the ambush tx (toast link), shown on the explorer at the end of the video
+    const href = await page.locator(".toast", { hasText: /AMBUSHED/ }).locator("a[href*='/txns/']").first().getAttribute("href", { timeout: 5000 }).catch(() => null);
+    ambushTx = href?.split("/txns/")[1] ?? null;
+    log("ambush tx", ambushTx);
     await page.waitForTimeout(6000);
     mark("ambush_end");
   } else log(`run ${run}:`, await toast());
@@ -136,7 +147,7 @@ for (let run = 1; run <= MAX_RUNS && !ambushed; run++) {
     await dismiss();
     await page.waitForTimeout(1500);
   }
-  if (!ambushed && run % 3 === 0) for (const p of raiders) await raid(p).catch(() => {});
+  if (!ambushed && run % 2 === 0) for (const p of raiders) await raid(p).catch(() => {});
 }
 if (!ambushed) log(`NO AMBUSH in ${MAX_RUNS} runs — retake needed`);
 
@@ -183,16 +194,26 @@ await page.waitForTimeout(800);
 mark("ff");
 await click(page.locator("text=Simulate 4 weeks"));
 await page.waitForSelector("text=mean daily inflation", { timeout: 60_000 });
-await page.waitForTimeout(4500);
-await smoothScroll(600);
-await page.waitForTimeout(5000);
+await page.waitForTimeout(4000);
+await smoothScroll(420);
+await page.waitForTimeout(3500);
 mark("ff_end");
+
+// --- H. the same ambush on a public explorer (NEAR Rocks by FastNear; NearBlocks blocks headless browsers)
+if (ambushTx) {
+  await page.goto(`https://testnet.near.rocks/tx/${ambushTx}`, { waitUntil: "domcontentloaded", timeout: 60_000 }).catch((e) => log("explorer:", e.message));
+  await page.waitForSelector("text=TRANSFERS", { timeout: 30_000 }).catch(() => log("explorer: no transfers block"));
+  await page.waitForTimeout(1500);
+  mark("explorer");
+  await page.waitForTimeout(7000);
+  mark("explorer_end");
+}
 
 await page.close();
 await rec.close();
 const vid = readdirSync(`${RAW}/tmp`).find((f) => f.endsWith(".webm"));
 renameSync(`${RAW}/tmp/${vid}`, `${RAW}/main.webm`);
 rmSync(`${RAW}/tmp`, { recursive: true, force: true });
-writeFileSync(`${RAW}/marks.json`, JSON.stringify({ ...marks, pilot: `pilot${rnd}.lowsec.testnet`, raiders: [0, 1, 2].map((i) => `raider${rnd}x${i}.lowsec.testnet`), ambushed, recordedAt: new Date().toISOString() }, null, 2));
+writeFileSync(`${RAW}/marks.json`, JSON.stringify({ ...marks, pilot: `pilot${rnd}.lowsec.testnet`, raiders: [0, 1, 2].map((i) => `raider${rnd}x${i}.lowsec.testnet`), ambushed, ambushTx, recordedAt: new Date().toISOString() }, null, 2));
 await browser.close();
 log("done", ambushed ? "AMBUSH captured" : "no ambush");

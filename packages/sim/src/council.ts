@@ -10,8 +10,12 @@
  */
 import type { Params } from "./params";
 
+/** The rule with the LIVE v0.4 constants, same text the contract's economy().council_rule returns. */
 export const COUNCIL_RULE =
-  "faucet_next = clamp(faucet × (1 − gain × (inflation − target)), ±10%/epoch, [70%, 110%]); inflation = mean supply growth over the last 3 epochs, excluding starter grants; hold if < 5 players";
+  "faucet_next = clamp(faucet × (1 − 3 × (inflation − target)), ±10%/epoch, [70%, 100%]); inflation = mean supply growth over the last 3 epochs, excluding starter grants; hold if < 5 players";
+/** v0.3 (live until the v0.4 upgrade, 2026-11-13 22:51 CET). */
+export const COUNCIL_RULE_V03 =
+  "faucet_next = clamp(faucet × (1 − 2 × (inflation − target)), ±10%/epoch, [70%, 110%]); inflation = mean supply growth over the last 3 epochs, excluding starter grants; hold if < 5 players";
 
 export interface CouncilDecision {
   epoch: number;

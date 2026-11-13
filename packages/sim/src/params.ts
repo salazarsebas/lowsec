@@ -186,6 +186,7 @@ export const LIVE_POPULATION: Partial<Population> = { initialPlayers: 3, surgeDa
  *  - launch, seed 42 (the Fast-forward): better on all 5 metrics (mean |error|, worst epoch, epochs in band, Gini, |mean − target|)
  *  - launch, 8-seed average: better on 4, epochs in the 0–1% band 40% vs 41% (−1 pp)
  *  - live, 4 seeds: better worst epoch, band and Gini; mean |error| 1.20 vs 1.13 pp and |mean − target| worse
- * Goes live with the next contract init (rules.rs Params::default + vectors regenerated); not redeployed yet.
+ * LIVE on lowsec.testnet since 2026-11-13 22:51 CET: code upgrade (state kept) + owner-only set_council_params(3, 10000),
+ * tx 4M3eDULyukMe1TEAXTeTLXm4rpsoM4zGwaX9vPUnbxj5. Params::default (fresh init) still carries the v0.3 constants.
  */
 export const COUNCIL_V04: Partial<Params> = { councilGain: 3, councilMaxFaucetBps: 10_000 };

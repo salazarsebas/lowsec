@@ -489,3 +489,54 @@ fn council_signal_excludes_starter_grants() {
     assert!(e[e.len() - 1].supply_end > e[e.len() - 1].supply_start); // supply grew by the grants...
     assert_eq!(s.signal_bps, 0); // ...but the signal does not count them as inflation
 }
+
+#[test]
+fn owner_retunes_council_to_v04_and_state_is_kept() {
+    let mut c = game(None);
+    ctx("alice.testnet", 1);
+    c.register(None);
+    let supply = c.economy().gold_supply;
+    assert!(c.economy().council_rule.contains("[70%, 110%]"));
+    ctx("owner.testnet", 2);
+    let p = c.set_council_params(3, 10_000);
+    assert_eq!((p.council_gain, p.council_max_faucet_bps), (3, 10_000));
+    // nothing else moved: same supply, same player, same faucet, same step bound
+    assert_eq!(c.economy().gold_supply, supply);
+    assert_eq!(gold(&c, "alice.testnet"), 500);
+    assert_eq!(c.params.faucet_bps, 10_000);
+    assert_eq!(c.params.council_max_step_bps, 1_000);
+    assert!(c.economy().council_rule.contains("1 − 3 ×") && c.economy().council_rule.contains("[70%, 100%]"));
+    // the rule now caps at 100% and the bound rejects anything above it
+    assert!(council_rule(&c.params, 10_000, -500) <= 10_000);
+    assert_eq!(council_rule(&c.params, 10_000, 0), 10_000); // inflation 0 → +3% wanted, capped at 100%
+}
+
+#[test]
+fn faucet_above_new_ceiling_walks_down_within_the_bound() {
+    let mut c = game(None);
+    ctx("council.testnet", c.params.tick_seconds * c.params.epoch_ticks + 1);
+    c.council_update(11_000, "h".into(), None);
+    ctx("owner.testnet", c.params.tick_seconds * c.params.epoch_ticks + 2);
+    c.set_council_params(3, 10_000);
+    let next = council_rule(&c.params, 11_000, 0);
+    assert_eq!(next, 10_000);
+    assert!(within_bound(11_000, next, c.params.council_max_step_bps));
+    ctx("council.testnet", 2 * c.params.tick_seconds * c.params.epoch_ticks + 1);
+    assert_eq!(c.council_update(next, "h".into(), None), 10_000);
+}
+
+#[test]
+#[should_panic(expected = "only the owner")]
+fn only_owner_retunes_council() {
+    let mut c = game(None);
+    ctx("council.testnet", 1);
+    c.set_council_params(3, 10_000);
+}
+
+#[test]
+#[should_panic(expected = "at most 110%")]
+fn council_ceiling_cannot_be_raised_above_v03() {
+    let mut c = game(None);
+    ctx("owner.testnet", 1);
+    c.set_council_params(3, 12_000);
+}
