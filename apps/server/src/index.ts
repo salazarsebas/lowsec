@@ -2,12 +2,14 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { gini, runSim, COUNCIL_RULE, V02_NPCS } from "@lowsec/sim";
-import { AGENTS_ENABLED, AGENTS_IDLE_PAUSE_MS, GUILD_ID, CONTRACT_ID, COUNCIL_ID, COUNCIL_INTERVAL_MS, EXPLORER, HAULER_INTERVAL_MS, NETWORK, PORT, RELAYER_ID } from "./config.js";
-import { account, accountExists, call, view } from "./chain.js";
+import { AGENTS_ENABLED, AGENTS_IDLE_PAUSE_MS, GUILD_ID, CONTRACT_ID, COUNCIL_ID, COUNCIL_INTERVAL_MS, EXPLORER, HAULER_INTERVAL_MS, NETWORK, OBSERVE, PORT, RELAYER_ID, RPC_URLS } from "./config.js";
+import { account, accountExists, call, rpcStatus, view } from "./chain.js";
 import { fcKey } from "./keys.js";
 import { decodeB64, relaySigned, relayerPoolSize } from "./relayer.js";
 import { addPlayer, getFeed, knownPlayers, push } from "./feed.js";
-import { makeProvider, readAttestation } from "./nearai.js";
+import { aiHealthNote, makeProvider, readAttestation } from "./nearai.js";
+import { friendlyError } from "./errors.js";
+import { staleWhileRevalidate } from "./cache.js";
 import { Hauler, PERSONAS, lastDecisions, lastMoves } from "./agents/hauler.js";
 import { Council, councilLog } from "./agents/council.js";
 import { GOODS, LANES, TOWNS, toSimParams, tradeOptions, type ChainParams, type Economy } from "./game.js";
@@ -37,9 +39,11 @@ app.use("/api/*", async (c, next) => {
 app.get("/api/health", (c) =>
   c.json({
     network: NETWORK, contract: CONTRACT_ID, relayer: RELAYER_ID, council: COUNCIL_ID, explorer: EXPLORER,
-    ai: { mode: ai.mode, model: ai.model, health: ai.health, note: ai.mode === "mock" ? "MOCK MODE: set NEARAI_API_KEY to run NPCs on a NEAR AI Cloud TEE model with verified signatures" : "NEAR AI Cloud TEE; every decision verified with verifyResponse()" },
+    ai: { mode: ai.mode, model: ai.model, health: ai.health, note: aiHealthNote(ai.mode, ai.health) },
     agents: { enabled: AGENTS_ENABLED, awake: awake(), idlePauseMs: AGENTS_IDLE_PAUSE_MS, npcs: haulers.map((h) => ({ id: h.persona.id, name: h.persona.name, kind: h.persona.kind, ready: h.ready })), council: council.ready },
     relayerKeys: relayerPoolSize(),
+    observe: OBSERVE,
+    rpc: rpcStatus(),
   }),
 );
 
@@ -62,7 +66,9 @@ app.get("/api/state", async (c) => {
   return c.json({ economy: eco, params: prm, me, npcs, feed: getFeed(40), ai: { mode: ai.mode, model: ai.model, health: ai.health }, genesisMs, contract: CONTRACT_ID, explorer: EXPLORER, serverTime: Date.now() });
 });
 
-app.get("/api/report", async (c) => {
+// ~150 testnet views (one gold balance per known player). Cache 45s and serve stale while a refresh runs.
+const reportCache = staleWhileRevalidate<Record<string, unknown>>(45_000);
+async function buildReport() {
   const eco = await view<Economy>("economy");
   // `epochs.from` is a Vector *record index*, not a clock epoch. Idle epochs
   // merge on-chain (record.span > 1), so len(records) << eco.epoch. The old
@@ -78,10 +84,13 @@ app.get("/api/report", async (c) => {
   const reg = await Promise.all(all.map((p) => view<any>("get_player", { account_id: p }, 60_000).then((x) => !!x).catch(() => false)));
   const players = all.filter((_, i) => reg[i]);
   const golds = await Promise.all(players.map((p) => view<string>("mt_balance_of", { account_id: p, token_id: "gold" }).then(Number).catch(() => 0)));
-  return c.json({ economy: eco, epochs, gini: gini(golds), giniPlayers: players.length, council: councilLog, councilRule: COUNCIL_RULE, contract: CONTRACT_ID, explorer: EXPLORER });
-});
+  return { economy: eco, epochs, gini: gini(golds), giniPlayers: players.length, council: councilLog, councilRule: COUNCIL_RULE, contract: CONTRACT_ID, explorer: EXPLORER };
+}
+app.get("/api/report", async (c) => c.json(await reportCache(buildReport)));
 
+const OBSERVE_MSG = "This instance is read-only (pnpm dev:observe). You can watch the live testnet contract, but this process has no relayer keys.";
 app.post("/api/onboard", async (c) => {
+  if (OBSERVE) return c.json({ error: OBSERVE_MSG }, 403);
   const { name, publicKey } = await c.req.json<{ name: string; publicKey: string }>();
   const clean = String(name ?? "").toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 32);
   if (!clean || !String(publicKey).startsWith("ed25519:")) return c.json({ error: "name (a-z0-9_-) and ed25519 publicKey required" }, 400);
@@ -90,13 +99,14 @@ app.post("/api/onboard", async (c) => {
   const k = fcKey(CONTRACT_ID, "onboarder");
   if (!k) return c.json({ error: "onboarder key missing: run `pnpm --filter @lowsec/server setup-keys`" }, 500);
   const r = await call(account(CONTRACT_ID, k), "create_player", { name: clean, public_key: publicKey }, 50);
-  if (!r.ok) return c.json({ error: r.error, txHash: r.txHash }, 400);
+  if (!r.ok) return c.json({ error: friendlyError(r.error) ?? r.error, txHash: r.txHash }, 400);
   addPlayer(accountId);
   push({ actor: clean, type: "join", text: `${clean} created ${accountId} (no wallet, no gas)`, txHash: r.txHash, ok: true });
   return c.json({ accountId, txHash: r.txHash, explorer: `${EXPLORER}/txns/${r.txHash}` });
 });
 
 app.post("/api/relay", async (c) => {
+  if (OBSERVE) return c.json({ error: OBSERVE_MSG }, 403);
   const { signedDelegate, label } = await c.req.json<{ signedDelegate: string; label?: string }>();
   let sd;
   try {
@@ -112,12 +122,22 @@ app.post("/api/relay", async (c) => {
   const method = (sd as any).delegateAction.actions?.[0]?.functionCall?.methodName;
   const short = sender.split(".")[0];
   const v: any = r.value;
+  if (r.error) r.error = friendlyError(r.error) ?? r.error;
   let text = label ?? `${short} → ${method}`;
   if (method === "arrive" && v) text = v.ambushed ? `${short} was AMBUSHED: ${v.burned} burned, ${v.looted} looted${v.raider ? ` by ${String(v.raider).split(".")[0]}` : " by pirates"}` : `${short} arrived in ${v.town} with ${v.delivered}`;
   if (method === "arrive" && v && Number(v.dock_fee) > 0) text += ` (docking fee ${v.dock_fee} burned)`;
   push({ actor: short, type: method === "arrive" && v?.ambushed ? "ambush" : method, text: r.ok ? text : `${text} failed: ${r.error}`, txHash: r.txHash, ok: r.ok });
   if (r.ok && method === "arrive" && v && before?.haul) {
     if (recordDelivery(sender, GOODS[before.haul.good], v.town, Number(v.delivered))) push({ actor: short, type: "contract", text: `★ ${short} completed today's contract: ${cotdStatus().text}`, ok: true });
+  }
+  if (r.ok && sender && (method === "buy" || method === "sell" || method === "start_haul")) {
+    try {
+      const bal = await view<string[]>("mt_batch_balance_of", { account_id: sender, token_ids: TOKENS }, 0);
+      const balances = Object.fromEntries(TOKENS.map((t, i) => [t, Number(bal[i])]));
+      r.balances = balances;
+      r.gold = balances.gold;
+      r.hold = { ore: balances.ore, parts: balances.parts, fuel: balances.fuel };
+    } catch {}
   }
   return c.json(r, r.ok ? 200 : 400);
 });
@@ -187,6 +207,8 @@ app.get("/api/agent/observe", async (c) => {
 
 serve({ fetch: app.fetch, port: PORT }, () => {
   console.log(`[lowsec] server on http://localhost:${PORT}  contract=${CONTRACT_ID}  AI=${ai.mode} (${ai.model})`);
+  console.log(`[lowsec] RPC pool: ${RPC_URLS.join(" -> ")}`);
+  if (OBSERVE) console.log("[lowsec] OBSERVE mode: read-only, no relayer/NPC keys required");
   if (ai.mode === "mock") console.log("[lowsec] MOCK MODE: NEARAI_API_KEY not set — NPC decisions use a labelled local policy, not a TEE model");
 });
 

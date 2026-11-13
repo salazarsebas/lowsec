@@ -7,6 +7,7 @@
     "sim": "pnpm --filter @lowsec/sim sim",
     "test": "pnpm -r test",
     "dev": "pnpm --parallel --filter @lowsec/server --filter @lowsec/web dev",
+    "dev:observe": "AGENTS=0 OBSERVE=1 pnpm --parallel --filter @lowsec/server --filter @lowsec/web dev",
     "start": "pnpm --parallel --filter @lowsec/server --filter @lowsec/web start",
     "build": "pnpm --filter @lowsec/web build",
     "setup-keys": "pnpm --filter @lowsec/server setup-keys"

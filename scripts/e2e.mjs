@@ -21,12 +21,14 @@ const toast = async (p = page) => (await p.locator(".toast").first().textContent
 const dismiss = (p = page) => p.click(".toast", { timeout: 1000 }).catch(() => {});
 
 async function join(p, name) {
+  const t0 = Date.now();
   await p.goto(URL);
   await p.waitForSelector(".map");
   await p.fill(".login input", name);
   await p.click(".login button.primary");
   await p.waitForSelector("text=Your hold", { timeout: 120_000 });
-  log(name, "joined:", await toast(p));
+  const joined = (await p.locator(".toast").first().textContent({ timeout: 2000 }).catch(() => "Your hold ready"))?.trim();
+  log(name, "joined:", joined, `latency=${Date.now() - t0}ms`);
   await dismiss(p);
 }
 async function postRaid(p, lane) {
@@ -70,17 +72,20 @@ for (let run = 1; run <= MAX_RUNS && !ambushed; run++) {
   await haulPanel().locator("select").nth(0).selectOption(good);
   await haulPanel().locator("select").nth(1).selectOption({ label: to });
   await page.locator("button.route", { hasText: "Lowsec" }).click();
+  const tDep = Date.now();
   await page.locator("button.primary", { hasText: "Depart" }).click();
   await page.waitForSelector("text=On the road", { timeout: 60_000 });
-  log(`run ${run}: ${good} → ${to} via Lowsec`);
+  log(`run ${run}: ${good} → ${to} via Lowsec depart=${Date.now() - tDep}ms`);
   if (run === 1) {
     await page.waitForTimeout(3000);
     await shot("03-hauling-lowsec");
   }
+  const tArr = Date.now();
   const r = await Promise.race([
     page.waitForSelector(".ambush-banner", { timeout: 120_000 }).then(() => "ambush"),
     page.waitForSelector(".toast >> text=/Arrived/", { timeout: 120_000 }).then(() => "arrived"),
   ]);
+  log(`run ${run}: arrive_or_ambush=${r} latency=${Date.now() - tArr}ms`);
   if (r === "ambush") {
     ambushed = true;
     await page.waitForTimeout(1500); // let the alert's numbers count up (it auto-dismisses at 2.5 s)

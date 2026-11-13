@@ -1,11 +1,15 @@
-import { Account, FailoverRpcProvider, JsonRpcProvider, actions, getTransactionLastResult, teraToGas, type KeyPairString } from "near-api-js";
+import { Account, KeyPair, actions, getTransactionLastResult, teraToGas, type KeyPairString } from "near-api-js";
 import { CONTRACT_ID, RPC_URLS } from "./config.js";
+import { createRpcPool } from "./rpc.js";
 
-export const provider = new FailoverRpcProvider([...new Set(RPC_URLS)].map((url) => new JsonRpcProvider({ url })));
+export const provider = createRpcPool([...new Set(RPC_URLS)]);
+export const rpcStatus = () => provider.status();
 
-/** Views are cached for ~1.5 s and de-duplicated in flight: many browser tabs polling must not hit the RPC rate limit. */
+const accounts = new Map<string, Account>();
+
+/** Views are cached for ~2.5 s and de-duplicated in flight: many browser tabs polling must not hit the RPC rate limit. */
 const viewCache = new Map<string, { at: number; p: Promise<unknown> }>();
-export async function view<T>(method: string, args: Record<string, unknown> = {}, maxAgeMs = 1500): Promise<T> {
+export async function view<T>(method: string, args: Record<string, unknown> = {}, maxAgeMs = 2500): Promise<T> {
   const k = method + JSON.stringify(args);
   const hit = viewCache.get(k);
   if (hit && Date.now() - hit.at < maxAgeMs) return hit.p as Promise<T>;
@@ -16,8 +20,15 @@ export async function view<T>(method: string, args: Record<string, unknown> = {}
   return p;
 }
 
+/** Reuse Account instances so near-api-js NonceManager tracks each key locally. */
 export function account(id: string, key: KeyPairString): Account {
-  return new Account(id, provider, key);
+  const k = `${id}:${KeyPair.fromString(key).getPublicKey().toString()}`;
+  let acc = accounts.get(k);
+  if (!acc) {
+    acc = new Account(id, provider as never, key);
+    accounts.set(k, acc);
+  }
+  return acc;
 }
 
 export interface TxResult {
@@ -27,6 +38,10 @@ export interface TxResult {
   logs: string[];
   events: { standard: string; event: string; data: any[] }[];
   error?: string;
+  /** Post-tx NEP-245 balances, when the API attached a cheap follow-up view. */
+  balances?: Record<string, number>;
+  gold?: number;
+  hold?: { ore: number; parts: number; fuel: number };
 }
 
 /** Normalise an RPC tx response into hash/value/logs/events. */

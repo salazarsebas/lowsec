@@ -49,6 +49,16 @@ export interface InferenceProvider {
 
 export const sha256 = (s: string | Buffer) => createHash("sha256").update(s).digest("hex");
 
+/** Truthful one-line status for /api/health — never claims "every decision verified" unless counts say so. */
+export function aiHealthNote(mode: "tee" | "mock", health: ProviderHealth): string {
+  if (mode === "mock") return "MOCK MODE: set NEARAI_API_KEY to run NPCs on a NEAR AI Cloud TEE model with verified signatures";
+  const { verified, fallbacks, calls } = health;
+  if (verified > 0 && fallbacks === 0) return `NEAR AI Cloud TEE; ${verified} decision${verified === 1 ? "" : "s"} verified with verifyResponse()`;
+  if (verified > 0) return `NEAR AI Cloud TEE; ${verified} decision${verified === 1 ? "" : "s"} verified with verifyResponse(), ${fallbacks} fallback${fallbacks === 1 ? "" : "s"} (unverified)`;
+  if (fallbacks > 0 || calls > 0) return `NEAR AI Cloud TEE configured, but 0 decisions verified (${fallbacks} fallback${fallbacks === 1 ? "" : "s"})`;
+  return "NEAR AI Cloud TEE configured; no decisions recorded yet";
+}
+
 const ATT_DIR = join(DATA_DIR, "attestations");
 
 function safeJson(x: unknown): string {

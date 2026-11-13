@@ -17,9 +17,11 @@ Built from scratch for the NEAR HACKATHON (tracks: Games With Real Economies; Ag
 ## Run it (one command)
 ```bash
 pnpm i
-pnpm dev        # Node server (relayer + AI haulers + Council) on :8787, game on http://localhost:3000
+pnpm dev           # Node server (relayer + AI haulers + Council) on :8787, game on http://localhost:3000
+pnpm dev:observe   # read-only UI against the live testnet contract — no relayer or NPC keys needed
 ```
-- It plays against the live testnet contract. The server reads its keys from `~/.near-credentials/testnet/` (see `.env.example`). Keys never go into the repo.
+- `pnpm dev` plays against the live testnet contract. The server reads its keys from `~/.near-credentials/testnet/` (see `.env.example`). Keys never go into the repo.
+- `pnpm dev:observe` is the no-keys path for judges and reviewers: same UI at http://localhost:3000, same on-chain economy, but the process never signs. Join / buy / depart are disabled; you can watch the map, NPCs, report and feed.
 - **MOCK mode:** if `NEARAI_API_KEY` isn't set, the NPC and Council "brains" use a deterministic local policy. That is labelled **MOCK · not verified** everywhere: the header pill, every badge, the attestation file, and `signature_kind="mock"` on-chain. Set the key and the same code calls `z-ai/glm-5.3-flash` on NEAR AI Cloud (TEE). If a NEAR AI call fails, that decision falls back to the local policy and is labelled **MOCK fallback · NEAR AI error** (header pill + badge show the error); nothing is ever marked verified without a `provider_tee` signature.
 - **TEE status today (2026-11-13), stated plainly:** with our key, `pnpm --filter @lowsec/server tee:check` passes step 1: the Gateway attestation and the `z-ai/glm-5.3-flash` model TEE report (TCB UpToDate, GPU evidence) verify. Inference then returns **402 "No spending limit configured"**: the NEAR AI account has no credits yet. So every decision on-chain so far is `signature_kind="mock"`, and the demo video shows MOCK. When credits are enabled, the running server switches to verified decisions with no code change.
 - `node scripts/e2e.mjs` runs the whole loop in a headless browser (two pilots, a raider and a hauler) and refreshes every screenshot in [`docs/screenshots`](docs/screenshots).
@@ -73,7 +75,7 @@ Expected terminal output for `pnpm sim --weeks 4` (seed 42, abridged):
 | Council explanation must match the rule's direction, or the rule text is used | [apps/server/src/agents/council.ts:117](apps/server/src/agents/council.ts#L117) |
 | Progressive sink: docking fee on gold above 400 | [contracts/lowsec/src/lib.rs:371](contracts/lowsec/src/lib.rs#L371) |
 | NEAR Intents 1Click quote, `dry: true` (quote only) | [apps/server/src/extras.ts:88](apps/server/src/extras.ts#L88) |
-| Open agent API for external agents with their own NEAR account | [apps/server/src/index.ts:161](apps/server/src/index.ts#L161), [examples/external-agent.mjs:10](examples/external-agent.mjs#L10) |
+| Open agent API for external agents with their own NEAR account | [apps/server/src/index.ts:181](apps/server/src/index.ts#L181), [examples/external-agent.mjs:10](examples/external-agent.mjs#L10) |
 
 Line numbers are as of the latest commit.
 

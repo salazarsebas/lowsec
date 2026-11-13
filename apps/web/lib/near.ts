@@ -6,11 +6,15 @@
  *     (game methods only, no deposits),
  *  3. sign every game action as a NEP-366 DelegateAction and let the relayer pay the gas.
  */
-import { Account, JsonRpcProvider, KeyPair, actions, encodeSignedDelegate, teraToGas, type KeyPairString } from "near-api-js";
+import { Account, FailoverRpcProvider, JsonRpcProvider, KeyPair, actions, encodeSignedDelegate, teraToGas, type KeyPairString } from "near-api-js";
 
 export const CONTRACT_ID = process.env.NEXT_PUBLIC_CONTRACT_ID ?? "lowsec.testnet";
-const RPC = process.env.NEXT_PUBLIC_NEAR_RPC ?? "https://test.rpc.fastnear.com";
-const provider = new JsonRpcProvider({ url: RPC });
+const DEFAULT_RPCS = ["https://near-testnet.drpc.org", "https://test.rpc.fastnear.com", "https://testnet-rpc.intea.rs"];
+const RPCS = (process.env.NEXT_PUBLIC_NEAR_RPC_URLS ?? [process.env.NEXT_PUBLIC_NEAR_RPC, ...DEFAULT_RPCS].filter(Boolean).join(","))
+  .split(",")
+  .map((u) => u.trim())
+  .filter(Boolean);
+const provider = new FailoverRpcProvider([...new Set(RPCS)].map((url) => new JsonRpcProvider({ url }, { retries: 2, wait: 200, backoff: 1.5 })));
 const LS = "lowsec.session.v1";
 
 export interface Session {

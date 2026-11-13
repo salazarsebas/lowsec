@@ -4,9 +4,20 @@ import { fileURLToPath } from "node:url";
 
 const env = process.env;
 export const NETWORK = env.NEAR_NETWORK ?? "testnet";
-export const RPC_URL = env.NEAR_RPC_URL ?? (NETWORK === "mainnet" ? "https://free.rpc.fastnear.com" : "https://test.rpc.fastnear.com");
-/** Failover list: free public RPCs rate-limit (429) under 5 NPCs + players, so the server rolls over to the next one. */
-export const RPC_URLS = (env.NEAR_RPC_URLS ?? [RPC_URL, ...(NETWORK === "mainnet" ? ["https://near.drpc.org"] : ["https://near-testnet.drpc.org", "https://rpc.testnet.near.org"])].join(",")).split(",").filter(Boolean);
+/** Free public testnet RPCs, ranked from a box benchmark (latency + burst of 30, no paid keys). Override with NEAR_RPC_URL / NEAR_RPC_URLS. */
+export const DEFAULT_TESTNET_RPCS = [
+  "https://near-testnet.drpc.org",
+  "https://test.rpc.fastnear.com",
+  "https://testnet-rpc.intea.rs",
+];
+export const DEFAULT_MAINNET_RPCS = [
+  "https://near.drpc.org",
+  "https://free.rpc.fastnear.com",
+  "https://rpc.intea.rs",
+];
+export const RPC_URL = env.NEAR_RPC_URL ?? (NETWORK === "mainnet" ? DEFAULT_MAINNET_RPCS[0] : DEFAULT_TESTNET_RPCS[0]);
+const fallback = NETWORK === "mainnet" ? DEFAULT_MAINNET_RPCS : DEFAULT_TESTNET_RPCS;
+export const RPC_URLS = (env.NEAR_RPC_URLS ?? [RPC_URL, ...fallback.filter((u) => u !== RPC_URL)].join(",")).split(",").map((u) => u.trim()).filter(Boolean);
 export const CONTRACT_ID = env.CONTRACT_ID ?? "lowsec.testnet";
 export const COUNCIL_ID = env.COUNCIL_ID ?? "lowsec-council.testnet";
 export const RELAYER_ID = env.RELAYER_ID ?? "lowsec-relayer.testnet";
@@ -23,9 +34,12 @@ export const CREDENTIALS_DIR = env.NEAR_CREDENTIALS_DIR ?? join(homedir(), ".nea
 /** Function-call keys created by `pnpm setup-keys` (outside the repo). */
 export const FC_DIR = join(CREDENTIALS_DIR, "lowsec-fc");
 export const DATA_DIR = env.DATA_DIR ?? join(dirname(fileURLToPath(import.meta.url)), "..", "data");
-export const AGENTS_ENABLED = env.AGENTS !== "0";
-export const HAULER_INTERVAL_MS = Number(env.HAULER_INTERVAL_MS ?? 10_000);
-export const COUNCIL_INTERVAL_MS = Number(env.COUNCIL_INTERVAL_MS ?? 20_000);
+export const OBSERVE = env.OBSERVE === "1";
+/** Agents are off in observe/read-only mode (no relayer or NPC keys required). */
+export const AGENTS_ENABLED = env.AGENTS !== "0" && !OBSERVE;
+
+export const HAULER_INTERVAL_MS = Number(env.HAULER_INTERVAL_MS ?? 20_000);
+export const COUNCIL_INTERVAL_MS = Number(env.COUNCIL_INTERVAL_MS ?? 30_000);
 export const NEARAI_MODEL = env.NEARAI_MODEL ?? "z-ai/glm-5.3-flash";
 export const EXPLORER = NETWORK === "mainnet" ? "https://nearblocks.io" : "https://testnet.nearblocks.io";
 /** Methods a relayed (gasless) meta-tx may call. */

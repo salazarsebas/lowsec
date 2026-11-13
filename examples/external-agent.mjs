@@ -17,5 +17,5 @@ for (;;) {
     const best = o.options.find((x) => x.route === "lowsec" || x.ambushChancePct < 15); // your strategy here
     if (best) { await call("buy", { good: best.good, qty: best.qty }); await call("start_haul", { to: best.to, route: best.route, good: best.good, qty: best.qty }); }
   }
-  await new Promise((r) => setTimeout(r, 8000));
+  await new Promise((r) => setTimeout(r, Number(process.env.EVERY_MS ?? 20000)));
 }

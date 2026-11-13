@@ -31,7 +31,11 @@ export function relayerAccount(): Account {
   return lanes()[0].acc;
 }
 export function relayerPoolSize(): number {
-  return lanes().length;
+  try {
+    return lanes().length;
+  } catch {
+    return 0;
+  }
 }
 
 /** Policy: only zero-deposit calls to the game contract, from game sub-accounts, for allowed methods. */
