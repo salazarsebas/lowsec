@@ -1,8 +1,8 @@
 /** Generates test vectors that the Rust contract must reproduce exactly (parity test). */
 import { writeFileSync } from "node:fs";
-import { DEFAULT_PARAMS as P, GOODS } from "./params.js";
-import { askPrice, bidPrice, buyCost, sellPayout, ambushChanceBps, ambushSplit, raidFee, revertStock, goalStock, dockFee } from "./pricing.js";
-import { councilSignalBps, councilStep, inflationBps } from "./council.js";
+import { DEFAULT_PARAMS as P, GOODS } from "./params";
+import { askPrice, bidPrice, buyCost, sellPayout, ambushChanceBps, ambushSplit, raidFee, revertStock, goalStock, dockFee } from "./pricing";
+import { councilSignalBps, councilStep, inflationBps } from "./council";
 
 export function makeVectors() {
   const stocks = [0, 1, 7, 50, 100, 199, 200, 201, 400, 799, 1600];

@@ -173,3 +173,19 @@ export const V02_NPCS: Partial<Population> = { aiHaulers: 2, aiActEveryTicks: 1,
  * then (every ~6 ticks), no launch wave, plus the NPC cast. Merged over DEFAULT_POPULATION.
  */
 export const LIVE_POPULATION: Partial<Population> = { initialPlayers: 3, surgeDays: 0, surgePerDay: 0, newPlayersPerDay: 0.3, humanActEveryTicks: 6 };
+
+/**
+ * v0.4 Council tuning (PROPOSED, sim only — NOT yet on the testnet contract, which still runs the v0.3
+ * values above: gain 2, range [70%, 110%]). Same public rule, same 3-epoch window, two constants changed:
+ *  - ceiling 110% → 100%: the Council can only TIGHTEN faucets, it never pays more than the base price.
+ *    At 110% it pumped NPC buy orders whenever growth dipped below target, which raised mean inflation
+ *    and concentrated gold in active traders (higher Gini), so the Fast-forward made it look worse.
+ *  - gain 2 → 3: reacts harder to the same smoothed signal.
+ * Picked by grid search (gain 1–4 × window 3–5 × floor 70/80% × ceiling 100/105/110%) as the best overall
+ * vs "no Council" across launch (8 seeds × 4 weeks) and live (4 seeds × 2 weeks) populations. Honest result:
+ *  - launch, seed 42 (the Fast-forward): better on all 5 metrics (mean |error|, worst epoch, epochs in band, Gini, |mean − target|)
+ *  - launch, 8-seed average: better on 4, epochs in the 0–1% band 40% vs 41% (−1 pp)
+ *  - live, 4 seeds: better worst epoch, band and Gini; mean |error| 1.20 vs 1.13 pp and |mean − target| worse
+ * Goes live with the next contract init (rules.rs Params::default + vectors regenerated); not redeployed yet.
+ */
+export const COUNCIL_V04: Partial<Params> = { councilGain: 3, councilMaxFaucetBps: 10_000 };

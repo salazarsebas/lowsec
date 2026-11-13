@@ -165,3 +165,8 @@
 .sm-far line { stroke: rgba(250,250,229,.07); stroke-width: 1; }
 .sm-far circle { fill: rgba(250,250,229,.42); }
 .sm-far circle.warm { fill: rgba(255,150,90,.5); }
+/* fix-web: replay a real ambush from the feed (clearly labelled REPLAY) */
+.sm-burn .bc-replay { pointer-events: auto; margin-top: 8px; display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 5px 10px; background: rgba(255, 59, 59, .1); border: 1px solid rgba(255, 59, 59, .55); color: var(--ink); font: 600 12px var(--ff-mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
+.sm-burn .bc-replay:hover { background: rgba(255, 59, 59, .22); }
+.sm-burn .bc-replay span { font: 500 11px var(--ff-mono); color: var(--ink-2); text-transform: none; letter-spacing: .02em; }
+.sm-burn .bc-label { font-size: 12px; }

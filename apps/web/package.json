@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@lowsec/sim": "workspace:*",
     "lucide-react": "^1.72.0",
     "near-api-js": "7.5.3",
     "next": "16.4.6",

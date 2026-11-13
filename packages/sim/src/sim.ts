@@ -3,11 +3,11 @@
  * Same seed + params => identical output. Used by the CLI (`pnpm sim --weeks 4`),
  * the server's "fast-forward" button and tests.
  */
-import { DEFAULT_PARAMS, DEFAULT_POPULATION, GOODS, HOME_GOOD, TOWNS, type Good, type Params, type Population, type Route, type Town } from "./params.js";
-import { Rng } from "./rng.js";
-import { goalStock, revertStock, ambushChanceBps, ambushSplit, askPrice, bidPrice, buyCost, dockFee, raidFee, sellPayout } from "./pricing.js";
-import { councilDecide, councilSignalBps, inflationBps, perCapitaInflationBps, type CouncilDecision } from "./council.js";
-import { emptyPeriod, gini, type PeriodMetrics } from "./metrics.js";
+import { DEFAULT_PARAMS, DEFAULT_POPULATION, GOODS, HOME_GOOD, TOWNS, type Good, type Params, type Population, type Route, type Town } from "./params";
+import { Rng } from "./rng";
+import { goalStock, revertStock, ambushChanceBps, ambushSplit, askPrice, bidPrice, buyCost, dockFee, raidFee, sellPayout } from "./pricing";
+import { councilDecide, councilSignalBps, inflationBps, perCapitaInflationBps, type CouncilDecision } from "./council";
+import { emptyPeriod, gini, type PeriodMetrics } from "./metrics";
 
 export type AgentKind = "safe" | "risky" | "raider" | "ai_hauler" | "market_maker";
 

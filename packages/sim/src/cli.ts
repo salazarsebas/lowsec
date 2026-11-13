@@ -1,10 +1,11 @@
 #!/usr/bin/env tsx
 /** `pnpm sim --weeks 4 [--seed 42] [--no-baseline] [--json out.json] [--daily]` */
 import { writeFileSync } from "node:fs";
-import { runSim, type SimResult } from "./sim.js";
-import { COUNCIL_RULE } from "./council.js";
-import type { PeriodMetrics } from "./metrics.js";
-import { LIVE_POPULATION, V02_NPCS } from "./params.js";
+import { runSim, type SimResult } from "./sim";
+import { COUNCIL_RULE } from "./council";
+import type { PeriodMetrics } from "./metrics";
+import { COUNCIL_V04, LIVE_POPULATION, V02_NPCS } from "./params";
+import { controlStats } from "./stats";
 
 const args = process.argv.slice(2);
 const arg = (k: string, d?: string) => {
@@ -72,6 +73,18 @@ if (baseline) {
     console.log(`  v0.1 rules (2 NPCs, no Guild, no Council, no docking fee): mean |error| ${pct(s2.mae)}  peak ${pct(peak(original))}  Gini ${original.final.gini.toFixed(3)}  final supply ${n(original.final.supply)}`);
     console.log(`  => v0.3 (Council + dock fee + 4 NPC traders + Guild) vs v0.1 rules: error ${((s1.mae / s2.mae - 1) * 100).toFixed(1)}%, Gini ${withCouncil.final.gini.toFixed(3)} vs ${original.final.gini.toFixed(3)}`);
   }
+}
+if (baseline) {
+  // v0.4 Council tuning (proposed, sim only): every metric, no cherry-picking. Lower is better except "in band".
+  const v4 = runSim({ weeks, seed, council: true, params: COUNCIL_V04, population });
+  const row = (name: string, r: SimResult) => {
+    const x = controlStats(r.daily, r.final.gini);
+    console.log(`  ${name.padEnd(24)} mean |error| ${x.mae.toFixed(2)} pp  worst epoch ${x.worst.toFixed(2)} pp  in 0–1% band ${(x.inBand * 100).toFixed(0)}%  |mean−target| ${x.meanOff.toFixed(2)} pp  Gini ${x.gini.toFixed(3)}`);
+  };
+  console.log("\nAll control metrics (day 2+, lower is better except band):");
+  row("no Council", baseline);
+  row("Council v0.3 (deployed)", withCouncil);
+  row("Council v0.4 (proposed)", v4);
 }
 const out = arg("json");
 if (out) {

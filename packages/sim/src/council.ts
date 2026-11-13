@@ -8,7 +8,7 @@
  * The contract re-checks the ±10% bound on-chain (set_npc_buy_bps), so even a
  * compromised council key cannot crash or pump the economy in one step.
  */
-import type { Params } from "./params.js";
+import type { Params } from "./params";
 
 export const COUNCIL_RULE =
   "faucet_next = clamp(faucet × (1 − gain × (inflation − target)), ±10%/epoch, [70%, 110%]); inflation = mean supply growth over the last 3 epochs, excluding starter grants; hold if < 5 players";

@@ -8,13 +8,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { State } from "@/lib/types";
 import { GOODS, TOWN_LABEL, TOWNS } from "@/lib/types";
-import { act, loadSession, signup, type Session } from "@/lib/near";
+import { act, loadSession, signup, type RelayResult, type Session } from "@/lib/near";
+import { friendly } from "@/lib/errors";
 import { pointOn, type Blast } from "@/components/GameMap";
 import { boom, chime } from "@/lib/sound";
 
 export type Tab = "play" | "report" | "sim";
 export interface Toast { id: number; msg: string; ok: boolean; tx?: string; kind?: "buy" | "sell" | "haul" | "raid" | "arrive" | "ambush" | "join" | "info" }
-export interface AmbushInfo { who: string; good: string; burned: number; looted: number; delivered: number; qty: number; valueLost: number; tx?: string }
+export interface AmbushInfo { who: string; good: string; burned: number; looted: number; delivered: number; qty: number; valueLost: number; tx?: string; replay?: { pilot: string; ts: number } }
 export interface Payoff { town: string; good: string | null; delivered: number; price: number; value: number; cost: number | null; toll: number; dockFee: number; profit: number | null; tx?: string }
 export interface TxLog { ts: number; label: string; ok: boolean; tx?: string }
 type CostBasis = Record<string, { qty: number; gold: number }>;
@@ -41,6 +42,10 @@ export function useGame() {
   const cost = useRef<CostBasis>({});
   const bootTs = useRef<number>(Date.now());
   const handled = useRef<Set<string>>(new Set()); // own arrive/ambush txs already shown
+  // tx in flight (buttons disable while set) + optimistic overlay: what the chain WILL show after our tx,
+  // applied until /api/state catches up (RPC views lag the tx by a few seconds on testnet)
+  const [pending, setPending] = useState<string | null>(null);
+  const optimistic = useRef<{ before: string; balances: Record<string, number>; haul?: any; until: number } | null>(null);
 
   const dismiss = useCallback((id: number) => setToasts((t) => t.filter((x) => x.id !== id)), []);
   const toast = useCallback((msg: string, ok: boolean, tx?: string, kind?: Toast["kind"]) => {
@@ -124,6 +129,13 @@ export function useGame() {
       });
     if (r.feed[0]) seenFeed.current = Math.max(seenFeed.current, r.feed[0].ts);
     if (r.me?.player?.haul) lastHaul.current.__me = r.me.player.haul;
+    const o = optimistic.current;
+    if (o && r.me?.player) {
+      // the view is stale while it still equals the pre-tx snapshot; once it moves, the chain wins
+      if (Date.now() < o.until && balKey(r.me.balances) === o.before) {
+        r.me = { ...r.me, balances: { ...r.me.balances, ...o.balances }, player: o.haul && !r.me.player.haul ? { ...r.me.player, haul: o.haul } : r.me.player };
+      } else optimistic.current = null;
+    }
     setS(r);
   }, [session, explode, toast]);
   useEffect(() => {
@@ -186,8 +198,88 @@ export function useGame() {
     }
   }, [toast]);
 
+  /** Most recent REAL ambush in the activity feed (yours first, else any pilot's). Nothing is rolled or invented. */
+  const lastAmbush = useCallback(() => {
+    const feed = (s?.feed ?? []).filter((f) => f.type === "ambush" && f.ok !== false);
+    const me = session?.accountId.split(".")[0];
+    return feed.find((f) => f.actor === me) ?? feed[0] ?? null;
+  }, [s, session]);
+  /** Replays the visual of that ambush (blast + alert), clearly labelled REPLAY. No tx, no toast, no feed entry. */
+  const replayLastAmbush = useCallback(() => {
+    const f = lastAmbush();
+    if (!f) return;
+    const m = /(\d+) burned, (\d+) looted(?: by (\S+))?/.exec(f.text);
+    const burned = m ? Number(m[1]) : 0, looted = m ? Number(m[2]) : 0, who = m?.[3] ?? "pirates";
+    const mine = f.actor === session?.accountId.split(".")[0];
+    const h = mine ? lastHaul.current.__me : lastHaul.current[f.actor];
+    const good = h?.good != null ? GOODS[h.good] : "cargo";
+    const qty = h?.qty && h.qty >= burned + looted ? h.qty : burned + looted;
+    explode(h ?? null, `REPLAY · −${burned} ${good.toUpperCase()} BURNED`, true);
+    const id = `replay-${f.ts}-${Date.now()}`;
+    setBanner({ who, good, burned, looted, delivered: Math.max(0, qty - burned - looted), qty, valueLost: 0, tx: id, replay: { pilot: f.actor, ts: f.ts } });
+    setTimeout(() => setBanner((b) => (b && b.tx === id ? null : b)), BANNER_MS + 1500);
+  }, [lastAmbush, session, explode]);
+
+  /** Every docked action goes through here: one tx at a time, optimistic hold/gold from the tx result
+   *  (or the server's post-tx balances when it sends them), immediate refetch, friendly error text. */
+  const runTx = useCallback(async (method: string, args: Record<string, any>, label: string, kind: Toast["kind"]): Promise<RelayResult | null> => {
+    if (!session || pending) return null;
+    setPending(method);
+    const before = s?.me?.balances ?? {};
+    try {
+      const r = await act(session, method, args, label);
+      if (r.ok) {
+        const next = postTxBalances(method, args, r, before, s?.params);
+        const haul = method === "start_haul" && r.value && typeof r.value === "object" ? r.value : undefined;
+        optimistic.current = { before: balKey(before), balances: next, haul, until: Date.now() + 15_000 };
+        setS((cur) => (cur?.me?.player ? { ...cur, me: { ...cur.me, balances: { ...cur.me.balances, ...next }, player: haul ? { ...cur.me.player, haul } : cur.me.player } } : cur));
+        toast(label, true, r.txHash, kind);
+      } else {
+        optimistic.current = null;
+        toast(friendly(r.error), false, r.txHash, kind);
+      }
+      // refetch right away, then twice more while testnet views catch up
+      refresh();
+      setTimeout(refresh, 1500);
+      setTimeout(refresh, 4000);
+      return r;
+    } catch (e) {
+      toast(friendly(e), false, undefined, kind);
+      refresh();
+      return null;
+    } finally {
+      setPending(null);
+    }
+  }, [session, pending, s, toast, refresh]);
+
   const onResult = useCallback((msg: string, ok: boolean, tx?: string, kind?: Toast["kind"]) => (toast(msg, ok, tx, kind), refresh()), [toast, refresh]);
 
-  return { session, setSession, s, tab, setTab, joining, join, toasts, dismiss, onResult, now, docking, blasts, shake, banner, dismissBanner: () => setBanner(null), payoff, setPayoff, txlog, refresh, recordBuy, clearCost, unitCost };
+  return { lastAmbush, replayLastAmbush, pending, runTx, session, setSession, s, tab, setTab, joining, join, toasts, dismiss, onResult, now, docking, blasts, shake, banner, dismissBanner: () => setBanner(null), payoff, setPayoff, txlog, refresh, recordBuy, clearCost, unitCost };
 }
 export type Game = ReturnType<typeof useGame>;
+
+const balKey = (b: Record<string, number> | undefined) => ["gold", ...GOODS].map((k) => Number(b?.[k] ?? 0)).join(",");
+
+/** Balances right after a successful tx. Prefers the server's post-tx read (balances / gold + hold fields,
+ *  optional), else derives them from the contract's return value (buy → cost, sell → payout). */
+export function postTxBalances(method: string, args: Record<string, any>, r: RelayResult & Record<string, any>, before: Record<string, number>, params?: { toll_gold?: number[] }): Record<string, number> {
+  if (r.balances && typeof r.balances === "object") return Object.fromEntries(Object.entries(r.balances).map(([k, v]) => [k, Number(v)]));
+  if (r.gold != null || r.hold) return { ...(r.gold != null ? { gold: Number(r.gold) } : {}), ...Object.fromEntries(Object.entries(r.hold ?? {}).map(([k, v]) => [k, Number(v)])) };
+  const b = { ...before };
+  const n = (k: string) => Number(b[k] ?? 0);
+  const v = Number(typeof r.value === "string" || typeof r.value === "number" ? r.value : NaN);
+  if (method === "buy") {
+    b[args.good] = n(args.good) + Number(args.qty);
+    if (Number.isFinite(v)) b.gold = n("gold") - v;
+  } else if (method === "sell") {
+    b[args.good] = Math.max(0, n(args.good) - Number(args.qty));
+    if (Number.isFinite(v)) b.gold = n("gold") + v;
+  } else if (method === "start_haul") {
+    if (args.good) b[args.good] = Math.max(0, n(args.good) - Number(args.qty));
+    const toll = params?.toll_gold?.[args.route === "lowsec" ? 1 : 0];
+    if (toll != null) b.gold = n("gold") - toll;
+  } else if (method === "raid") {
+    b.gold = n("gold") - Number(args.stake);
+  }
+  return b;
+}

@@ -11,13 +11,13 @@ const EN = {
   haul: "Buy ore where it's cheap, sell where it's scarce. The safe lane is slow but safe. Lowsec is three times faster, but raiders camp it.",
   ambush: "Lowsec it is. Ten seconds out, and there it is: convoy intercepted. Part of the cargo is burned, part goes to the raider who camped this lane. That burn is a real sink, and the burned counter never goes down.",
   tooltip: tee
-    ? "You compete with four AI traders. Each picks its strategy with a NEAR AI model running in a TEE, and the attestation goes on-chain. Moves in between are cheap rules."
-    : "You compete with four AI traders. Each picks its strategy with a NEAR AI model, and the decision hash goes on-chain. Here it runs in clearly labelled mock mode.",
+    ? "Four AI traders compete with you. Each picks its strategy with NEAR AI Cloud's private TEE inference, attestation checked, and every decision is logged on-chain."
+    : "Four AI traders compete with you. They're built for NEAR AI Cloud's private TEE, attestation checked. Until credits activate, a labelled mock decides. Every decision is logged on-chain.",
   report: "Every faucet and sink is public. The Economic Report reads the ledger straight from the contract. An AI Council follows one public rule: too much growth, cut rewards; too little, raise them. The contract caps each step at ten percent.",
-  ff: "Fast-forward four weeks with the same rules as the contract: inflation stays close to the one percent target.",
+  ff: "Fast-forward four weeks in the simulator. Every metric is shown, wins and losses. The retuned Council beats no Council on error, worst day and inequality.",
   agent: "Want to compete? Bring your own agent. Twenty-one lines of JavaScript, its own NEAR account, and it's trading.",
   intents: "And with NEAR Intents, you can get a cross-chain deposit quote in one click.",
-  close: "Lowsec: a real economy, verifiable AI, on NEAR. Open source on GitHub: salazarsebas slash lowsec.",
+  close: "Lowsec: a real economy on NEAR, with every AI decision logged on-chain. Open source on GitHub: salazarsebas slash lowsec.",
 };
 const ES = {
   hook: "Esta carga acaba de arder. On-chain. Perdida para siempre.",
@@ -26,13 +26,13 @@ const ES = {
   haul: "Compra mineral donde es barato y véndelo donde escasea. La ruta segura es lenta pero sin riesgo. Lowsec es tres veces más rápida, pero hay piratas acechando.",
   ambush: "Vamos por Lowsec. Diez segundos de viaje y ahí está: convoy interceptado. Parte de la carga se quema y parte se la lleva el pirata que acechaba esta ruta. Esa quema es un sumidero real, y el contador de carga quemada nunca baja.",
   tooltip: tee
-    ? "Compites con cuatro traders de IA. Cada uno elige su estrategia con un modelo de NEAR AI en un TEE, y la atestación queda on-chain. Las jugadas intermedias son reglas baratas."
-    : "Compites con cuatro traders de IA. Cada uno elige su estrategia con un modelo de NEAR AI, y el hash de la decisión queda on-chain. Aquí corre en modo mock, claramente etiquetado.",
+    ? "Compites con cuatro traders de IA. Cada uno elige su estrategia con inferencia privada en TEE de NEAR AI Cloud, con la atestación verificada, y cada decisión queda registrada on-chain."
+    : "Compites con cuatro traders de IA. Están hechos para la inferencia privada en TEE de NEAR AI Cloud, con verificación de atestación. Hasta que se activen los créditos, decide un mock etiquetado. Cada decisión queda registrada on-chain.",
   report: "Cada fuente y sumidero de oro es público. El Informe Económico lee el libro contable directo del contrato. Un Consejo de IA sigue una regla pública: si crece demasiado, recorta recompensas; si crece poco, las sube. El contrato limita cada paso al diez por ciento.",
-  ff: "Adelantamos cuatro semanas con las mismas reglas del contrato: la inflación se queda cerca del objetivo del uno por ciento.",
+  ff: "Adelantamos cuatro semanas en el simulador. Se ven todas las métricas, a favor y en contra. El Consejo reajustado le gana a no tener Consejo en error, peor día y desigualdad.",
   agent: "¿Quieres competir? Trae tu propio agente. Veintiuna líneas de JavaScript, su propia cuenta NEAR, y ya está comerciando.",
   intents: "Y con NEAR Intents obtienes una cotización de depósito cross-chain con un clic.",
-  close: "Lowsec: una economía real, IA verificable, en NEAR. Código abierto en GitHub: salazarsebas barra lowsec.",
+  close: "Lowsec: una economía real en NEAR, con cada decisión de IA registrada on-chain. Código abierto en GitHub: salazarsebas barra lowsec.",
 };
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}.${String(Math.round((s % 1) * 10)).padStart(1, "0")}`;
 const words = (t) => t.split(/\s+/).length;
