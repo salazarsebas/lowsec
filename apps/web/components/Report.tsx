@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { LineChart } from "./LineChart";
+import { LineChart, councilMarkers } from "./LineChart";
 import { AttestationBadge } from "./Badge";
 import { Panel, Stat, CountUp, Icon } from "@/ui";
 import "@/styles/econ.css";
@@ -61,12 +61,22 @@ export function Report() {
 
   const recs: EpochRec[] = Array.isArray(r.epochs) ? r.epochs : [];
   const closed = recs.filter((x) => num(x.supply_start) > 0);
-  const xs = closed.map((x) => num(x.epoch) + num(x.span ?? 1) - 1);
+  const inflXs = closed.map((x) => num(x.epoch));
+  const inflSpans = closed.map((x) => Math.max(1, num(x.span ?? 1)));
   const inflation = closed.map((x) => x.inflation_bps / 100);
-  const supplyRecs = recs.filter((x) => num(x.supply_end) > 0);
-  const supplyXs = supplyRecs.map((x) => num(x.epoch) + num(x.span ?? 1) - 1);
-  const supply = supplyRecs.map((x) => num(x.supply_end));
+  // Gold path uses each record's start and end so the line holds flat across a
+  // merged idle span instead of drawing a diagonal between distant close-points.
+  const goldXs: number[] = [];
+  const goldVs: number[] = [];
+  for (const rec of recs) {
+    if (num(rec.supply_end) <= 0 && num(rec.supply_start) <= 0) continue;
+    goldXs.push(num(rec.epoch));
+    goldVs.push(num(rec.supply_start) || num(rec.supply_end));
+    goldXs.push(num(rec.epoch) + Math.max(1, num(rec.span ?? 1)));
+    goldVs.push(num(rec.supply_end));
+  }
   const hasChart = closed.length >= 1 && inflation.some((v) => Number.isFinite(v));
+  const markers = councilMarkers(r.council ?? []);
 
   const barMax = Math.max(minted, burned, 1);
   const cargo = num(t.cargo_burned_units);
@@ -162,19 +172,20 @@ export function Report() {
 
       <Panel
         title="Gold growth per epoch"
-        sub="vs 1% target · inflation axis clipped at ±8%; ▲ marks the real value"
-        right={<span className="muted small">x = closed epoch · idle records keep their span</span>}
+        sub="bars cover each record's span · no interpolation across merges · clipped at ±8%"
+        right={<span className="muted small">x = epoch · gold = start→end of each record</span>}
       >
         {hasChart ? (
           <LineChart
-            height={200}
+            height={220}
             band={[0, target]}
             clip={[-8, 8]}
             yFmt={(v) => `${v.toFixed(1)}%`}
             yFmtRight={(v) => v >= 1000 ? `${Math.round(v / 1000)}k` : `${Math.round(v)}`}
+            markers={markers}
             series={[
-              { name: "inflation % / epoch", color: "var(--loss)", values: inflation, xs, fill: true },
-              { name: "gold supply", color: "var(--gold)", values: supply, xs: supplyXs, axis: "right" },
+              { name: "inflation % / epoch", color: "var(--loss)", values: inflation, xs: inflXs, spans: inflSpans, kind: "bars" },
+              { name: "gold supply", color: "var(--gold)", values: goldVs, xs: goldXs, axis: "right", kind: "area", fill: true },
             ]}
           />
         ) : (
