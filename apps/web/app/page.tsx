@@ -1,13 +1,14 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { State } from "@/lib/types";
-import { GOODS, GOOD_ICON, TOWNS, TOWN_LABEL } from "@/lib/types";
+import { GOODS, TOWNS, TOWN_LABEL } from "@/lib/types";
+import { GoodIcon, Icon, SoundToggle } from "@/ui";
 import { act, clearSession, loadSession, signup, type Session } from "@/lib/near";
 import { GameMap, pointOn, type Blast } from "@/components/GameMap";
 import { ContractOfDay, Leaderboard, Onboarding } from "@/components/Goals";
 import { NpcCard } from "@/components/NpcCard";
 import { Deposit } from "@/components/Deposit";
-import { boom, chime, setSound } from "@/lib/sound";
+import { boom, chime } from "@/lib/sound";
 import { Actions } from "@/components/Actions";
 import { Report } from "@/components/Report";
 import { Simulate } from "@/components/Simulate";
@@ -26,7 +27,6 @@ export default function Home() {
   const [blasts, setBlasts] = useState<Blast[]>([]);
   const [shake, setShake] = useState(false);
   const [banner, setBanner] = useState<string | null>(null);
-  const [sound, setSoundState] = useState(false);
   const lastHaul = useRef<Record<string, any>>({});
   const seenFeed = useRef<number>(0);
 
@@ -58,7 +58,7 @@ export default function Home() {
     if (seenFeed.current > 0)
       fresh.filter((f) => f.type === "ambush" && f.actor !== session?.accountId.split(".")[0]).forEach((f) => {
         const m = /(\d+)\s*\w*\s*burned/.exec(f.text);
-        explode(lastHaul.current[f.actor], `☠ ${f.actor} ambushed${m ? ` · ${m[1]} burned` : ""}`, false);
+        explode(lastHaul.current[f.actor], `${f.actor} AMBUSHED${m ? ` · ${m[1]} BURNED` : ""}`, false);
       });
     if (r.feed[0]) seenFeed.current = Math.max(seenFeed.current, r.feed[0].ts);
     if (r.me?.player?.haul) lastHaul.current.__me = r.me.player.haul;
@@ -80,10 +80,10 @@ export default function Home() {
       const v = r.value;
       if (v?.ambushed) {
         const who = v.raider ? String(v.raider).split(".")[0] : "pirates";
-        explode(h, `☠ −${v.burned} ${GOOD_ICON[GOODS[h.good]]} BURNED`, true);
+        explode(h, `−${v.burned} ${GOODS[h.good].toUpperCase()} BURNED`, true);
         setBanner(`AMBUSHED by ${who}! ${v.burned} cargo burned forever, ${v.looted} looted · ${v.delivered} made it`);
         setTimeout(() => setBanner(null), 4200);
-        setToast({ msg: `☠ AMBUSHED! ${v.burned} burned (mt_burn), ${v.looted} looted by ${who} — ${v.delivered} delivered`, ok: false, tx: r.txHash });
+        setToast({ msg: `AMBUSHED! ${v.burned} burned (mt_burn), ${v.looted} looted by ${who} — ${v.delivered} delivered`, ok: false, tx: r.txHash });
       } else if (r.ok) {
         chime();
         setToast({ msg: `Arrived in ${TOWN_LABEL[v?.town] ?? "town"} with ${v?.delivered ?? ""} cargo${Number(v?.dock_fee) > 0 ? ` · docking fee ${v.dock_fee}◎ burned` : ""}`, ok: true, tx: r.txHash });
@@ -121,7 +121,7 @@ export default function Home() {
           ))}
         </nav>
         <div className="hdr-right">
-          <button className="link" title="optional sound effects" onClick={() => (setSound(!sound), setSoundState(!sound))}>{sound ? "🔊" : "🔈"}</button>
+          <SoundToggle />
           {s && (s.ai.mode === "tee" && s.ai.health?.lastOk === false ? (
             <span className="badge mock" title={`NEAR AI key set, but the last call failed, so NPCs fell back to the labelled MOCK policy: ${s.ai.health.lastError ?? ""}`}>NPC brains: MOCK fallback (NEAR AI error)</span>
           ) : (
@@ -129,7 +129,7 @@ export default function Home() {
           ))}
           {session && s?.me && (
             <span className="me">
-              <a href={`${explorer}/address/${session.accountId}`} target="_blank" rel="noreferrer">{session.accountId}</a> · <b>{s.me.balances.gold ?? 0}</b> {GOOD_ICON.gold}
+              <a href={`${explorer}/address/${session.accountId}`} target="_blank" rel="noreferrer">{session.accountId}</a> · <b>{s.me.balances.gold ?? 0}</b> <GoodIcon good="gold" className="gold-glyph" />
               <button className="link" onClick={() => (clearSession(), setSession(null))}>log out</button>
             </span>
           )}
@@ -138,7 +138,7 @@ export default function Home() {
 
       {toast && (
         <div className={toast.ok ? "toast ok" : "toast bad"} onClick={() => setToast(null)}>
-          {toast.msg} {toast.tx && <a href={`${explorer}/txns/${toast.tx}`} target="_blank" rel="noreferrer">tx ↗</a>}
+          <Icon name={toast.ok ? "done" : "ambush"} size={14} className={toast.ok ? "green" : "red"} />{toast.msg} {toast.tx && <a href={`${explorer}/txns/${toast.tx}`} target="_blank" rel="noreferrer">tx ↗</a>}
         </div>
       )}
 
@@ -149,7 +149,7 @@ export default function Home() {
           <section className="left">
             <div className="map-holder">
               <GameMap s={s} now={now} blasts={blasts} shake={shake} />
-              {banner && <div className="ambush-banner">☠ {banner}</div>}
+              {banner && <div className="ambush-banner"><Icon name="ambush" size={30} strokeWidth={1.75} />{banner}</div>}
             </div>
             {session && <Onboarding s={s} />}
             {!session ? (
@@ -171,7 +171,7 @@ export default function Home() {
             {s.me?.player && (
               <div className="panel">
                 <h3>Your hold</h3>
-                <div className="hold">{["gold", ...GOODS].map((g) => <span key={g}>{GOOD_ICON[g]} {g} <b>{s.me!.balances[g] ?? 0}</b></span>)}</div>
+                <div className="hold">{["gold", ...GOODS].map((g) => <span key={g}><GoodIcon good={g} className={g === "gold" ? "gold-glyph" : undefined} /> {g} <b>{s.me!.balances[g] ?? 0}</b></span>)}</div>
                 <div className="muted small">in {TOWN_LABEL[TOWNS[s.me.player.town]]} · {s.me.player.hauls} hauls · ambushed {s.me.player.ambushed}× · raids won {s.me.player.raids_won}</div>
                 <div className="muted small">NEP-245 tokens on <a href={`${explorer}/address/${s.contract}`} target="_blank" rel="noreferrer">{s.contract}</a></div>
               </div>
@@ -182,7 +182,7 @@ export default function Home() {
               <h3>NPC traders <span className="muted small">(4 AI + the Guild · hover them on the map)</span></h3>
               {s.npcs.map((n) => (
                 <div key={n.id} className="npc">
-                  <div><b>{n.name}</b> <a className="muted small" href={`${explorer}/address/${n.id}`} target="_blank" rel="noreferrer">{n.id}</a> · {n.balances.gold}{GOOD_ICON.gold}</div>
+                  <div><b>{n.name}</b> <a className="muted small" href={`${explorer}/address/${n.id}`} target="_blank" rel="noreferrer">{n.id}</a> · {n.balances.gold} <GoodIcon good="gold" size={12} className="gold-glyph" /></div>
                   <NpcCard n={n} explorer={explorer} compact />
                 </div>
               ))}

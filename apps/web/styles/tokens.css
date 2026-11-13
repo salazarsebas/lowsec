@@ -1,0 +1,77 @@
+/* Lowsec design tokens — "HOSTILE SPACE / MISSION CONTROL". See docs/DESIGN.md.
+   Rule: ≥85% of the screen is --void/--hull. --signal (orange) marks ONE CTA per screen and the
+   player's convoy. Red (--sec-null / --loss) means danger or loss only. */
+:root {
+  /* base */
+  --void: #050608;            /* page / space */
+  --hull: #0B0D11;            /* solid panel */
+  --hull-2: #12151B;          /* raised / hover */
+  --glass: rgba(10, 12, 16, .72);
+  --line: rgba(250, 250, 229, .12);
+  --line-strong: rgba(250, 250, 229, .28);
+  --ink: #FAFAE5;             /* EVE Frontier cream: primary text */
+  --ink-2: #B9B8A6;           /* secondary text */
+  --ink-3: #6F6E63;           /* labels, disabled */
+
+  /* signal: one per screen */
+  --signal: #FF4700;
+  --signal-glow: rgba(255, 71, 0, .35);
+  --signal-soft: rgba(255, 71, 0, .12);
+
+  /* EVE security ramp: lanes, systems, risk (high → null) */
+  --sec-10: #2FEFEF; --sec-09: #48F0C0; --sec-08: #00EF47; --sec-07: #00F000; --sec-06: #8FEF2F;
+  --sec-05: #EFEF00; --sec-04: #D77700; --sec-03: #F06000; --sec-02: #F04800; --sec-01: #D73000; --sec-00: #F00000;
+  --sec-high: var(--sec-10); --sec-mid: var(--sec-06); --sec-low: var(--sec-03); --sec-null: var(--sec-00);
+
+  /* economy */
+  --gold: #F0B43C;
+  --profit: #3DDC97;
+  --loss: #FF3B3B;
+
+  /* AI / verification (honesty labels) */
+  --tee: #7CF5C8;
+  --mock: #F5A524;
+
+  /* town identity */
+  --forja: #FF8A3D; --mina: #C9A27A; --puerto: #4FB3FF;
+
+  /* type families (from app/fonts.ts) */
+  --ff-display: var(--font-display), "Rajdhani", system-ui, sans-serif;
+  --ff-mono: var(--font-mono), ui-monospace, monospace;
+  --ff-body: var(--font-body), "Arial Narrow", system-ui, sans-serif;
+
+  /* type scale (px) */
+  --fs-label: 11px;   /* mono caps labels, tracking --track-label */
+  --fs-micro: 10px;   /* pills, tooltip keys */
+  --fs-small: 12px;
+  --fs-body: 14px;
+  --fs-value: 16px;   /* mono tabular values */
+  --fs-value-lg: 20px;
+  --fs-h3: 15px;      /* panel title (display caps) */
+  --fs-town: 28px;
+  --fs-title: 40px;
+  --fs-alert: 56px;
+  --track-label: .12em;
+  --track-display: .06em;
+
+  /* spacing: 4px base */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px; --s-7: 48px;
+  --gutter: 24px;
+
+  /* shape: radius 0, clipped corners */
+  --radius: 0;
+  --notch: 10px;       /* panels: top-left + bottom-right */
+  --notch-sm: 6px;     /* buttons: bottom-right */
+  --clip-panel: polygon(var(--notch) 0, 100% 0, 100% calc(100% - var(--notch)), calc(100% - var(--notch)) 100%, 0 100%, 0 var(--notch));
+  --clip-btn: polygon(0 0, 100% 0, 100% calc(100% - var(--notch-sm)), calc(100% - var(--notch-sm)) 100%, 0 100%);
+
+  /* motion */
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+  --t-fast: 120ms;
+  --t-med: 240ms;
+
+  /* depth */
+  --blur: blur(8px) saturate(120%);
+  --shadow-deep: 0 12px 40px rgba(0, 0, 0, .6);
+  --z-hud: 10; --z-overlay: 20; --z-tooltip: 30; --z-alert: 40;
+}

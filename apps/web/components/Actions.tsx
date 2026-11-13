@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
 import type { State } from "@/lib/types";
-import { GOODS, GOOD_ICON, LANES, TOWNS, TOWN_LABEL, ambushPct, laneOf } from "@/lib/types";
+import { GOODS, LANES, TOWNS, TOWN_LABEL, ambushPct, laneOf } from "@/lib/types";
+import { GoodIcon } from "@/ui";
 import { act, type Session } from "@/lib/near";
 
 export function Actions({ s, session, onResult }: { s: State; session: Session; onResult: (msg: string, ok: boolean, tx?: string) => void }) {
@@ -36,7 +37,7 @@ export function Actions({ s, session, onResult }: { s: State; session: Session; 
       <div className="panel">
         <h3>On the road</h3>
         <p>
-          Hauling <b>{h.qty} {GOOD_ICON[GOODS[h.good]]} {GOODS[h.good]}</b> {TOWN_LABEL[TOWNS[h.from]]} → {TOWN_LABEL[TOWNS[h.to]]} via{" "}
+          Hauling <b>{h.qty} <GoodIcon good={GOODS[h.good]} /> {GOODS[h.good]}</b> {TOWN_LABEL[TOWNS[h.from]]} → {TOWN_LABEL[TOWNS[h.to]]} via{" "}
           <b className={h.route === 1 ? "red" : "green"}>{h.route === 1 ? "LOWSEC" : "safe lane"}</b>
         </p>
         <p className="muted small">Arrival resolves on-chain when the convoy gets there{h.route === 1 ? " — Lowsec convoys can be ambushed and lose cargo (burned)" : ""}.</p>
@@ -64,7 +65,7 @@ export function Actions({ s, session, onResult }: { s: State; session: Session; 
           <tbody>
             {GOODS.map((g, i) => (
               <tr key={g} className={i === here ? "home" : ""}>
-                <td>{GOOD_ICON[g]} {g}{i === here && <span className="tag">made here</span>}</td>
+                <td><GoodIcon good={g} /> {g}{i === here && <span className="tag">made here</span>}</td>
                 <td>{town.ask[i]}</td>
                 <td>{town.bid[i]}</td>
                 <td className="muted">{town.stock[i]}</td>
@@ -91,7 +92,7 @@ export function Actions({ s, session, onResult }: { s: State; session: Session; 
             <b className="green">Safe lane</b><span>{p.travel_ticks[0] * p.tick_seconds}s · toll {p.toll_gold[0]} · 0% risk</span>
           </button>
           <button className={route === "lowsec" ? "route sel" : "route"} onClick={() => setRoute("lowsec")}>
-            <b className="red">Lowsec</b><span>{p.travel_ticks[1] * p.tick_seconds}s · toll {p.toll_gold[1]} · {ambushPct(p, raidsOnLane)}% ambush{raidsOnLane ? ` (☠×${raidsOnLane})` : ""}</span>
+            <b className="red">Lowsec</b><span>{p.travel_ticks[1] * p.tick_seconds}s · toll {p.toll_gold[1]} · {ambushPct(p, raidsOnLane)}% ambush{raidsOnLane ? ` · ${raidsOnLane} raider${raidsOnLane > 1 ? "s" : ""}` : ""}</span>
           </button>
         </div>
         <p className="small">Est. sale in {TOWN_LABEL[TOWNS[d]]}: <b>{estRevenue}</b> gold{route === "lowsec" && <> · if ambushed you lose {p.ambush_loss_bps / 100}% of the cargo (burned / looted)</>}</p>

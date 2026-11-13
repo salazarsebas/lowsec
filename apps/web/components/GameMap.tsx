@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
 import type { Npc, State } from "@/lib/types";
-import { GOODS, GOOD_ICON, TOWNS, TOWN_LABEL, laneOf } from "@/lib/types";
+import { GOODS, TOWNS, TOWN_LABEL, laneOf } from "@/lib/types";
+import { GoodIcon, Icon } from "@/ui";
 import { NpcCard } from "./NpcCard";
 import { NPC_COLORS } from "@/lib/types";
 
@@ -40,13 +41,13 @@ export function GameMap({ s, now, blasts = [], shake = false }: { s: State; now:
   };
   const movers: Mover[] = [];
   s.npcs.forEach((n, i) => n.player && movers.push({ id: n.id, label: n.name, color: NPC_COLORS[i % NPC_COLORS.length], town: n.player.town, haul: n.player.haul, npc: n }));
-  if (s.me?.player) movers.push({ id: s.me.account, label: "You", color: "#3ee6ff", town: s.me.player.town, haul: s.me.player.haul });
+  if (s.me?.player) movers.push({ id: s.me.account, label: "You", color: "#FF4700", town: s.me.player.town, haul: s.me.player.haul });
   const pairs: [number, number][] = [[0, 1], [1, 2], [0, 2]];
   return (
     <div className={shake ? "map-wrap shake" : "map-wrap"}>
       <svg viewBox="0 0 900 420" className="map">
         <defs>
-          <radialGradient id="glow"><stop offset="0%" stopColor="#2b3b55" /><stop offset="100%" stopColor="#0b0f17" /></radialGradient>
+          <radialGradient id="glow"><stop offset="0%" stopColor="#141820" /><stop offset="100%" stopColor="#050608" /></radialGradient>
         </defs>
         <rect width="900" height="420" fill="url(#glow)" />
         {pairs.map(([a, b]) => {
@@ -60,7 +61,7 @@ export function GameMap({ s, now, blasts = [], shake = false }: { s: State; now:
               <path d={`M${POS[a].x},${POS[a].y} Q${Q.x},${Q.y} ${POS[b].x},${POS[b].y}`} className="lane-safe-flow" />
               <line x1={POS[a].x} y1={POS[a].y} x2={POS[b].x} y2={POS[b].y} className={raids ? "lane-low hot" : "lane-low"} />
               {raids > 0 && <line x1={POS[a].x} y1={POS[a].y} x2={POS[b].x} y2={POS[b].y} className="lane-danger" />}
-              <text x={mid.x} y={mid.y - 10} className="lane-label">LOWSEC {raids ? `☠×${raids}` : ""}</text>
+              <text x={mid.x} y={mid.y - 10} className="lane-label">{raids ? `LOWSEC · ${raids} RAIDER${raids > 1 ? "S" : ""}` : "LOWSEC"}</text>
               <text x={pointOn(a, b, 0, 0.5).x} y={pointOn(a, b, 0, 0.5).y + 18} className="lane-label safe">safe</text>
             </g>
           );
@@ -71,11 +72,16 @@ export function GameMap({ s, now, blasts = [], shake = false }: { s: State; now:
             <g key={t} transform={`translate(${POS[i].x},${POS[i].y})`}>
               <circle r={34} className="town" />
               <text y={-44} className="town-name">{TOWN_LABEL[t]}</text>
-              <text y={5} className="town-icon">{GOOD_ICON[GOODS[i]]}</text>
+              <GoodIcon good={GOODS[i]} x={-12} y={-12} size={24} className="town-icon" />
               {town && (
-                <text y={56} className="town-prices">
-                  {GOODS.map((g, gi) => `${GOOD_ICON[g]}${town.ask[gi]}`).join("  ")}
-                </text>
+                <g className="town-prices" transform="translate(-78,50)">
+                  {GOODS.map((g, gi) => (
+                    <g key={g} transform={`translate(${gi * 54},0)`}>
+                      <GoodIcon good={g} x={0} y={-6} size={12} className="town-icon" />
+                      <text x={15} y={4} textAnchor="start">{town.ask[gi]}</text>
+                    </g>
+                  ))}
+                </g>
               )}
             </g>
           );
@@ -90,14 +96,15 @@ export function GameMap({ s, now, blasts = [], shake = false }: { s: State; now:
               <g transform={`translate(${pt.x},${pt.y})`} className="mover-body">
               {m.haul && <circle r={15} fill="none" stroke={m.color} strokeWidth={1.5} className={m.haul.route === 1 ? "pulse danger" : "pulse"} />}
               <circle r={m.label === "You" ? 9 : 8} fill={m.color} stroke="#000" strokeWidth={1.5} />
-              <text y={-13} className="mover-label" fill={m.color}>{m.label}{m.haul ? ` · ${m.haul.qty}${GOOD_ICON[GOODS[m.haul.good]]}` : ""}</text>
+              <text y={-13} className="mover-label" fill={m.color}>{m.label}{m.haul ? ` · ${m.haul.qty} ${GOODS[m.haul.good]}` : ""}</text>
               </g>
             </g>
           );
         })}
         <g className="burn-counter" transform="translate(18,30)">
           <text className="bc-label">CARGO BURNED</text>
-          <text key={s.economy.total.cargo_burned_units} y={30} className="bc-value">🔥 {s.economy.total.cargo_burned_units}</text>
+          <Icon name="burn" x={0} y={9} size={24} className="bc-icon" />
+          <text key={s.economy.total.cargo_burned_units} x={30} y={30} className="bc-value">{s.economy.total.cargo_burned_units}</text>
           <text y={48} className="bc-sub">{s.economy.total.ambushes} ambushes · gone forever</text>
         </g>
         {blasts.map((b) => (
