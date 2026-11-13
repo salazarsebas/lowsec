@@ -156,7 +156,7 @@ export function Actions({ s, session, onResult, step, now, docking, recordBuy, c
           <span className="right"><Pill tone="neutral" icon="cargo">Hold {holdTotal}/{p.cargo_cap}</Pill></span>
         </div>
         <table className="market">
-          <thead><tr><th>Good</th><th className="n">Buy</th><th className="n">Sell</th><th className="n">You</th><th className="n">Best run</th><th></th></tr></thead>
+          <thead><tr><th>Good</th><th className="n">Buy</th><th className="n">Sell</th><th className="n you">You</th><th className="n">Run</th><th></th></tr></thead>
           <tbody>
             {GOODS.map((g, i) => {
               const others = [0, 1, 2].filter((t) => t !== here);

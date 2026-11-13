@@ -1,9 +1,8 @@
 /* WP2 · Game HUD, core loop, landing, toasts, ledger, ambush + arrival moments.
    The play screen is a fixed full-viewport scene: the map fills the stage, glass HUD panels dock
    in the corners. Safe-area vars (--top-h, --intel-w, --dock-h) tell the map where the HUD is. */
-:root { --top-h: 56px; --intel-w: 360px; --dock-h: 300px; --edge: 16px; }
-@media (max-width: 1500px) { :root { --intel-w: 320px; } }
-@media (max-width: 1100px) { :root { --intel-w: 280px; --edge: 10px; } }
+:root { --top-h: 56px; --intel-w: 372px; --dock-h: 300px; --edge: 16px; }
+@media (max-width: 1100px) { :root { --intel-w: 320px; --edge: 10px; } }
 
 html.scene, html.scene body { height: 100%; overflow: hidden; }
 main.game { max-width: none; padding: 0; margin: 0; }
@@ -42,32 +41,12 @@ header.hud-top::after { content: ""; position: absolute; left: 0; bottom: -1px; 
 
 /* ---------- stage (map) ---------- */
 .stage { position: fixed; inset: 0; z-index: 0; background: var(--void); }
-.stage-sky { position: absolute; inset: 0; pointer-events: none;
-  background:
-    radial-gradient(ellipse 60% 50% at 62% 55%, rgba(60, 20, 10, .35), transparent 70%),
-    radial-gradient(ellipse 50% 60% at 18% 30%, rgba(20, 40, 70, .28), transparent 70%),
-    radial-gradient(1px 1px at 12% 18%, rgba(250, 250, 229, .7), transparent),
-    radial-gradient(1px 1px at 72% 12%, rgba(250, 250, 229, .5), transparent),
-    radial-gradient(1px 1px at 40% 80%, rgba(250, 250, 229, .5), transparent),
-    radial-gradient(1px 1px at 88% 66%, rgba(250, 250, 229, .6), transparent),
-    radial-gradient(1px 1px at 25% 60%, rgba(250, 250, 229, .4), transparent),
-    radial-gradient(1px 1px at 55% 35%, rgba(250, 250, 229, .4), transparent),
-    var(--void);
-}
-.stage-sky::after { content: ""; position: absolute; inset: 0; opacity: .5;
-  background-image: radial-gradient(rgba(250, 250, 229, .35) .6px, transparent .8px); background-size: 140px 140px; background-position: 30px 50px; animation: drift 120s linear infinite; }
-@keyframes drift { to { background-position: 170px 190px; } }
-/* the map lives in the HUD-free area of the full-bleed stage */
-.stage .map-wrap { position: absolute; top: var(--top-h); left: 0; right: 0; bottom: 0; }
-.play.joined .stage .map-wrap { right: var(--intel-w); bottom: var(--dock-h); }
-.play.out .stage .map-wrap { left: min(44vw, 640px); }
-.stage .map { width: 100%; height: 100%; border: 0; margin: 0; background: transparent; }
-.stage .map > rect:first-of-type { opacity: .55; }
-
+/* the map (WP1, fullBleed) fills the stage; page.tsx passes px insets so towns stay clear of the HUD */
 /* ---------- intel rail slot ---------- */
 .intel { position: fixed; z-index: var(--z-hud); top: calc(var(--top-h) + var(--s-3)); right: var(--edge); bottom: var(--edge); width: calc(var(--intel-w) - var(--edge) - var(--s-2));
   overflow-y: auto; overscroll-behavior: contain; padding-right: 2px; }
-.intel .panel { margin-bottom: var(--s-2); }
+.intel { overflow: hidden; display: flex; }
+.intel .intel-rail { width: 100%; max-width: none; max-height: none; height: 100%; }
 
 /* ---------- dock ---------- */
 .dock { position: fixed; z-index: var(--z-hud); left: var(--edge); bottom: var(--edge); right: var(--intel-w); display: flex; flex-direction: column; gap: var(--s-2); pointer-events: none; }
@@ -287,3 +266,18 @@ header.hud-top::after { content: ""; position: absolute; left: 0; bottom: -1px; 
   .convoy-track { margin: var(--s-2) 0 var(--s-3); }
   .tracker { padding: 4px var(--s-3) 4px var(--s-2); }
 }
+/* round 3: map starts under the top bar (keeps WP1's burn counter visible); tighter dock at 1280 */
+.stage { top: var(--top-h); }
+.dock-raid .ui-panel-header h3 { white-space: nowrap; font-size: 12px; }
+.tdesc { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 520px; }
+@media (max-width: 1500px) {
+  .dock-market th.you, .dock-market td.you { display: none; }
+  .dock-market td.run .to { display: none; }
+  .tdesc { max-width: 300px; }
+  .payoff.panel { width: 300px; padding: var(--s-3); } .po-total b { font-size: 36px; }
+}
+.ab-core { background: radial-gradient(ellipse at center, rgba(5, 6, 8, .93) 0%, rgba(5, 6, 8, .8) 45%, rgba(5, 6, 8, 0) 75%); padding: var(--s-6) 120px; }
+/* center the ambush alert over the visible map, not under the dock / intel rail */
+.play.joined ~ .ambush-banner, .play.joined .ambush-banner { padding: var(--top-h) var(--intel-w) var(--dock-h) 0; }
+.ab-title { font-size: clamp(36px, 4.2vw, var(--fs-alert)); white-space: nowrap; }
+@media (max-width: 1500px) { .ab-core { padding: var(--s-5) 64px; } .ab-n b { font-size: 40px; } .ab-nums { gap: var(--s-6); } }

@@ -36,7 +36,7 @@ export function HudTop({ s, session, tab, setTab, ledger, toggleLedger, logout }
         {s && <AiChip s={s} />}
         {session && me?.player && (
           <div className="hold-chip" title={`Docked in ${TOWN_LABEL[TOWNS[me.player.town]]} · ${me.player.hauls} hauls · ambushed ${me.player.ambushed}× · raids won ${me.player.raids_won}`}>
-            <span className="ui-label">Your hold</span>
+            <span className="ui-label">Cargo</span>
             <SegBar total={Math.min(25, s!.params.cargo_cap)} filled={Math.round((cargo / s!.params.cargo_cap) * Math.min(25, s!.params.cargo_cap))} className="hold-bar" />
             <span className="hold-goods">
               {GOODS.map((g) => <span key={g} className={(me.balances[g] ?? 0) > 0 ? "on" : ""}><GoodIcon good={g} size={13} /><CountUp value={me.balances[g] ?? 0} duration={350} /></span>)}

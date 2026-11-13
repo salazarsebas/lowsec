@@ -1,13 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
 import "../styles/hud.css";
-import { GoodIcon } from "@/ui";
 import { act, clearSession } from "@/lib/near";
 import { useGame } from "@/lib/useGame";
 import { GameMap } from "@/components/GameMap";
-import { ContractOfDay, Leaderboard } from "@/components/Goals";
-import { NpcCard } from "@/components/NpcCard";
-import { Deposit } from "@/components/Deposit";
+import { IntelRail } from "@/components/Intel";
 import { Actions } from "@/components/Actions";
 import { Onboarding, onboardingStep } from "@/components/Onboarding";
 import { Landing } from "@/components/Landing";
@@ -30,14 +27,29 @@ export default function Home() {
     return () => document.documentElement.classList.remove("scene");
   }, [play]);
 
-  // publish the dock height so the map can keep its towns out from under the HUD
+  // keep the map's towns clear of the HUD: measure the dock / intel rail / landing and pass px insets
+  const [insets, setInsets] = useState({ top: 8, right: 0, bottom: 0, left: 0 });
   useEffect(() => {
-    const el = document.querySelector(".dock");
-    if (!el) return;
-    const ro = new ResizeObserver(() => document.documentElement.style.setProperty("--dock-h", `${Math.ceil(el.getBoundingClientRect().height) + 24}px`));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [play, joined, !!s]);
+    if (!play || !s) return;
+    const q = (sel: string) => document.querySelector(sel) as HTMLElement | null;
+    const measure = () => {
+      const W = innerWidth, H = innerHeight;
+      const dock = q(".dock"), intel = q(".intel"), land = q(".landing");
+      const n = {
+        top: 8,
+        right: intel ? Math.ceil(W - intel.getBoundingClientRect().left) + 8 : 24,
+        bottom: dock ? Math.ceil(H - dock.getBoundingClientRect().top) + 8 : 24,
+        left: land ? Math.ceil(land.getBoundingClientRect().right * 0.9) : 24,
+      };
+      document.documentElement.style.setProperty("--dock-h", `${n.bottom}px`);
+      setInsets((o) => (o.top === n.top && o.right === n.right && o.bottom === n.bottom && o.left === n.left ? o : n));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    [".dock", ".intel", ".landing"].forEach((sel) => { const el = q(sel); if (el) ro.observe(el); });
+    addEventListener("resize", measure);
+    return () => (ro.disconnect(), removeEventListener("resize", measure));
+  }, [play, joined, !!s, !!session, step]);
 
   return (
     <main className={play ? `game play${session ? " in" : " out"}${joined ? " joined" : ""}` : "game page"}>
@@ -49,8 +61,7 @@ export default function Home() {
       {s && play && (
         <>
           <div className="stage map-holder">
-            <div className="stage-sky" aria-hidden />
-            <GameMap s={s} now={g.now} blasts={g.blasts} shake={g.shake} />
+            <GameMap s={s} now={g.now} blasts={g.blasts} shake={g.shake} fullBleed insets={insets} burnCounter={session ? "top-left" : "bottom-right"} legend={!session || !joined ? false : true} />
           </div>
           {g.banner && <AmbushOverlay a={g.banner} />}
           {g.payoff && <PayoffReceipt p={g.payoff} />}
@@ -67,31 +78,8 @@ export default function Home() {
           )}
 
           {session && (
-            /* Intel rail slot (WP3 restyles these components; rendered unchanged here) */
-            <aside id="intel" className="intel">
-              <ContractOfDay account={session?.accountId} />
-              <Leaderboard me={session?.accountId} />
-              <div className="panel">
-                <h3>NPC traders <span className="muted small">(4 AI + the Guild · hover them on the map)</span></h3>
-                {s.npcs.map((n) => (
-                  <div key={n.id} className="npc">
-                    <div><b>{n.name}</b> <a className="muted small" href={`${explorer}/address/${n.id}`} target="_blank" rel="noreferrer">{n.id}</a> · {n.balances.gold} <GoodIcon good="gold" size={12} className="gold-glyph" /></div>
-                    <NpcCard n={n} explorer={explorer} compact />
-                  </div>
-                ))}
-              </div>
-              <Deposit />
-              <div className="panel feed">
-                <h3>Activity</h3>
-                <ul>
-                  {s.feed.slice(0, 16).map((f) => (
-                    <li key={f.ts + f.text} className={f.type === "ambush" ? "ambush" : f.type === "council" ? "council" : f.type === "contract" ? "contract" : f.ok === false ? "fail" : ""}>
-                      <span className="muted small">{new Date(f.ts).toLocaleTimeString()}</span> {f.text} {f.txHash && <a href={`${explorer}/txns/${f.txHash}`} target="_blank" rel="noreferrer">↗</a>}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </aside>
+            /* Intel rail slot (WP3) */
+            <div id="intel" className="intel"><IntelRail s={s} accountId={session.accountId} explorer={explorer} /></div>
           )}
         </>
       )}
