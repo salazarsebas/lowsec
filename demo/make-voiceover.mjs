@@ -17,7 +17,7 @@ const EN = {
   ff: "Fast-forward four weeks with the same rules as the contract: inflation stays close to the one percent target.",
   agent: "Want to compete? Bring your own agent. Twenty-one lines of JavaScript, its own NEAR account, and it's trading.",
   intents: "And with NEAR Intents, you can get a cross-chain deposit quote in one click.",
-  close: "Lowsec: a real economy, verifiable AI, on NEAR. Open source. Link below.",
+  close: "Lowsec: a real economy, verifiable AI, on NEAR. Open source on GitHub: salazarsebas slash lowsec.",
 };
 const ES = {
   hook: "Esta carga acaba de arder. On-chain. Perdida para siempre.",
@@ -32,7 +32,7 @@ const ES = {
   ff: "Adelantamos cuatro semanas con las mismas reglas del contrato: la inflación se queda cerca del objetivo del uno por ciento.",
   agent: "¿Quieres competir? Trae tu propio agente. Veintiuna líneas de JavaScript, su propia cuenta NEAR, y ya está comerciando.",
   intents: "Y con NEAR Intents obtienes una cotización de depósito cross-chain con un clic.",
-  close: "Lowsec: una economía real, IA verificable, en NEAR. Código abierto. Enlace abajo.",
+  close: "Lowsec: una economía real, IA verificable, en NEAR. Código abierto en GitHub: salazarsebas barra lowsec.",
 };
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}.${String(Math.round((s % 1) * 10)).padStart(1, "0")}`;
 const words = (t) => t.split(/\s+/).length;
@@ -40,7 +40,7 @@ function doc(lang, L) {
   const head = lang === "en"
     ? `# Lowsec demo — voiceover script (English)\n\nVideo: \`demo/lowsec-demo-silent.mp4\` (${tl.total.toFixed(1)} s, 1920×1080, no audio). Read each line inside its window; pace ≈ 2.5 words/s. The on-screen captions already carry the facts, so small timing drift is fine.\n\nRecord as one take (WAV/M4A/MP3, any rate), then run \`demo/mux.sh your-audio.ext\` — it normalises loudness to −16 LUFS and muxes it.\n\n| # | window | on screen | line to read | words / s |\n|---|---|---|---|---|\n`
     : `# Lowsec demo — guion de locución (copia en español, solo referencia)\n\nEl vídeo se narra en INGLÉS (ver \`VOICEOVER.md\`). Esta es la traducción de cada línea con las mismas ventanas de tiempo.\n\n| # | ventana | en pantalla | texto | palabras / s |\n|---|---|---|---|---|\n`;
-  const rows = tl.segments.map((s, i) => `| ${i + 1} | ${fmt(s.start)}–${fmt(s.end)} | ${s.caption ?? (s.id === "title" ? "title card" : "closing card: tracks + repo")} | ${L[s.id]} | ${words(L[s.id])} / ${(s.end - s.start).toFixed(1)} |`);
+  const rows = tl.segments.map((s, i) => `| ${i + 1} | ${fmt(s.start)}–${fmt(s.end)} | ${s.caption ?? (s.id === "title" ? "title card" : "closing card: tracks + github.com/salazarsebas/lowsec")} | ${L[s.id]} | ${words(L[s.id])} / ${(s.end - s.start).toFixed(1)} |`);
   return head + rows.join("\n") + "\n";
 }
 writeFileSync("demo/VOICEOVER.md", doc("en", EN));

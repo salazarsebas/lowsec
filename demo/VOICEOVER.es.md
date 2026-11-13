@@ -14,4 +14,4 @@ El vídeo se narra en INGLÉS (ver `VOICEOVER.md`). Esta es la traducción de ca
 | 8 | 1:15.7–1:27.7 | Fast-forward 4 weeks in the simulator: the same rules as the contract | Adelantamos cuatro semanas con las mismas reglas del contrato: la inflación se queda cerca del objetivo del uno por ciento. | 20 / 12.0 |
 | 9 | 1:27.7–1:39.7 | Real testnet run: an outside agent trading with its own NEAR account | ¿Quieres competir? Trae tu propio agente. Veintiuna líneas de JavaScript, su propia cuenta NEAR, y ya está comerciando. | 18 / 12.0 |
 | 10 | 1:39.7–1:47.7 | NEAR Intents 1Click: live cross-chain deposit quote (quote only) | Y con NEAR Intents obtienes una cotización de depósito cross-chain con un clic. | 13 / 8.0 |
-| 11 | 1:47.7–1:55.7 | closing card: tracks + repo | Lowsec: una economía real, IA verificable, en NEAR. Código abierto. Enlace abajo. | 12 / 8.0 |
+| 11 | 1:47.7–1:55.7 | closing card: tracks + github.com/salazarsebas/lowsec | Lowsec: una economía real, IA verificable, en NEAR. Código abierto en GitHub: salazarsebas barra lowsec. | 15 / 8.0 |

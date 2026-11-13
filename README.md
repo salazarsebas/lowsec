@@ -4,6 +4,8 @@
 
 Built from scratch for the NEAR HACKATHON (tracks: Games With Real Economies; Agents; Swarms).
 
+**Repo:** https://github.com/salazarsebas/lowsec · **Demo video (silent cut, 1:56; voiceover script in [demo/VOICEOVER.md](demo/VOICEOVER.md)):** [demo/lowsec-demo-silent.mp4](demo/lowsec-demo-silent.mp4). It shows a real testnet ambush; the AI tooltip says MOCK because the NEAR AI account has no credits yet (see "TEE status" below).
+
 ![ambush](docs/screenshots/04-ambush.png)
 
 ## Run it (one command)

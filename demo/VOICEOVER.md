@@ -16,4 +16,4 @@ Record as one take (WAV/M4A/MP3, any rate), then run `demo/mux.sh your-audio.ext
 | 8 | 1:15.7–1:27.7 | Fast-forward 4 weeks in the simulator: the same rules as the contract | Fast-forward four weeks with the same rules as the contract: inflation stays close to the one percent target. | 18 / 12.0 |
 | 9 | 1:27.7–1:39.7 | Real testnet run: an outside agent trading with its own NEAR account | Want to compete? Bring your own agent. Twenty-one lines of JavaScript, its own NEAR account, and it's trading. | 18 / 12.0 |
 | 10 | 1:39.7–1:47.7 | NEAR Intents 1Click: live cross-chain deposit quote (quote only) | And with NEAR Intents, you can get a cross-chain deposit quote in one click. | 14 / 8.0 |
-| 11 | 1:47.7–1:55.7 | closing card: tracks + repo | Lowsec: a real economy, verifiable AI, on NEAR. Open source. Link below. | 12 / 8.0 |
+| 11 | 1:47.7–1:55.7 | closing card: tracks + github.com/salazarsebas/lowsec | Lowsec: a real economy, verifiable AI, on NEAR. Open source on GitHub: salazarsebas slash lowsec. | 15 / 8.0 |

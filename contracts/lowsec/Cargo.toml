@@ -4,7 +4,7 @@ description = "Lowsec: a mini EVE Frontier on NEAR. NEP-245 gold + cargo, contes
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-repository = "https://github.com/<owner>/lowsec"
+repository = "https://github.com/salazarsebas/lowsec"
 
 [lib]
 crate-type = ["cdylib", "rlib"]

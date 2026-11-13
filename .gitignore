@@ -23,3 +23,4 @@ apps/server/data/
 .tmp*
 demo/raw/
 demo/*.mp4
+!demo/lowsec-demo-silent.mp4
