@@ -1,211 +1,109 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { State } from "@/lib/types";
-import { GOODS, TOWNS, TOWN_LABEL } from "@/lib/types";
-import { GoodIcon, Icon, SoundToggle } from "@/ui";
-import { act, clearSession, loadSession, signup, type Session } from "@/lib/near";
-import { GameMap, pointOn, type Blast } from "@/components/GameMap";
-import { ContractOfDay, Leaderboard, Onboarding } from "@/components/Goals";
+import { useEffect, useState } from "react";
+import "../styles/hud.css";
+import { GoodIcon } from "@/ui";
+import { act, clearSession } from "@/lib/near";
+import { useGame } from "@/lib/useGame";
+import { GameMap } from "@/components/GameMap";
+import { ContractOfDay, Leaderboard } from "@/components/Goals";
 import { NpcCard } from "@/components/NpcCard";
 import { Deposit } from "@/components/Deposit";
-import { boom, chime } from "@/lib/sound";
 import { Actions } from "@/components/Actions";
+import { Onboarding, onboardingStep } from "@/components/Onboarding";
+import { Landing } from "@/components/Landing";
+import { AmbushOverlay, HudTop, Ledger, PayoffReceipt, Toasts } from "@/components/Hud";
 import { Report } from "@/components/Report";
 import { Simulate } from "@/components/Simulate";
 
-type Tab = "play" | "report" | "sim";
-
 export default function Home() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [s, setS] = useState<State | null>(null);
-  const [tab, setTab] = useState<Tab>("play");
-  const [name, setName] = useState("");
-  const [joining, setJoining] = useState("");
-  const [toast, setToast] = useState<{ msg: string; ok: boolean; tx?: string } | null>(null);
-  const [now, setNow] = useState(Date.now());
-  const arriving = useRef(false);
-  const [blasts, setBlasts] = useState<Blast[]>([]);
-  const [shake, setShake] = useState(false);
-  const [banner, setBanner] = useState<string | null>(null);
-  const lastHaul = useRef<Record<string, any>>({});
-  const seenFeed = useRef<number>(0);
-
-  const explode = useCallback((h: any, text: string, big: boolean) => {
-    const pt = h ? pointOn(h.from, h.to, h.route, 0.9) : { x: 450, y: 240 };
-    const id = Date.now() + Math.random();
-    setBlasts((b) => [...b, { id, x: pt.x, y: pt.y, text, big }]);
-    setTimeout(() => setBlasts((b) => b.filter((x) => x.id !== id)), 2600);
-    if (big) {
-      setShake(true);
-      setTimeout(() => setShake(false), 650);
-    }
-    boom();
-  }, []);
-
-  useEffect(() => {
-    setSession(loadSession());
-    const u = new URLSearchParams(location.search).get("tab");
-    if (u === "report" || u === "sim") setTab(u);
-  }, []);
-  const refresh = useCallback(async () => {
-    const q = session ? `?account=${session.accountId}` : "";
-    const r = await fetch(`/api/state${q}`).then((x) => x.json()).catch(() => null);
-    if (!r?.economy) return;
-    // remember every convoy's last haul so an ambush in the feed can explode at the right spot
-    r.npcs.forEach((n: any) => n.player?.haul && (lastHaul.current[n.name] = n.player.haul));
-    // other pilots' ambushes from the activity feed (our own is handled by auto-arrive)
-    const fresh = (r.feed as any[]).filter((f) => f.ts > seenFeed.current);
-    if (seenFeed.current > 0)
-      fresh.filter((f) => f.type === "ambush" && f.actor !== session?.accountId.split(".")[0]).forEach((f) => {
-        const m = /(\d+)\s*\w*\s*burned/.exec(f.text);
-        explode(lastHaul.current[f.actor], `${f.actor} AMBUSHED${m ? ` · ${m[1]} BURNED` : ""}`, false);
-      });
-    if (r.feed[0]) seenFeed.current = Math.max(seenFeed.current, r.feed[0].ts);
-    if (r.me?.player?.haul) lastHaul.current.__me = r.me.player.haul;
-    setS(r);
-  }, [session, explode]);
-  useEffect(() => {
-    refresh();
-    const t = setInterval(refresh, 2500);
-    const n = setInterval(() => setNow(Date.now()), 250);
-    return () => (clearInterval(t), clearInterval(n));
-  }, [refresh]);
-
-  // auto-arrive: resolve our haul as soon as the convoy reaches the destination
-  useEffect(() => {
-    const h = s?.me?.player?.haul;
-    if (!session || !h || arriving.current || (s?.economy.tick ?? 0) < h.arrive_tick) return;
-    arriving.current = true;
-    act(session, "arrive", {}).then((r) => {
-      const v = r.value;
-      if (v?.ambushed) {
-        const who = v.raider ? String(v.raider).split(".")[0] : "pirates";
-        explode(h, `−${v.burned} ${GOODS[h.good].toUpperCase()} BURNED`, true);
-        setBanner(`AMBUSHED by ${who}! ${v.burned} cargo burned forever, ${v.looted} looted · ${v.delivered} made it`);
-        setTimeout(() => setBanner(null), 4200);
-        setToast({ msg: `AMBUSHED! ${v.burned} burned (mt_burn), ${v.looted} looted by ${who} — ${v.delivered} delivered`, ok: false, tx: r.txHash });
-      } else if (r.ok) {
-        chime();
-        setToast({ msg: `Arrived in ${TOWN_LABEL[v?.town] ?? "town"} with ${v?.delivered ?? ""} cargo${Number(v?.dock_fee) > 0 ? ` · docking fee ${v.dock_fee}◎ burned` : ""}`, ok: true, tx: r.txHash });
-      }
-      refresh();
-    }).finally(() => setTimeout(() => (arriving.current = false), 3000));
-  }, [s, session, refresh, explode]);
-
-  async function join() {
-    setJoining("Creating your account…");
-    try {
-      const sess = await signup(name);
-      setJoining("Registering (gasless meta-tx)…");
-      const r = await act(sess, "register", { town: "mina" }, "joined Lowsec");
-      if (!r.ok && !/already registered/.test(r.error ?? "")) throw new Error(r.error);
-      setSession(sess);
-      setToast({ msg: `Welcome ${sess.accountId} — no wallet, no gas`, ok: true, tx: r.txHash });
-    } catch (e: any) {
-      setToast({ msg: String(e?.message ?? e), ok: false });
-    } finally {
-      setJoining("");
-    }
-  }
-
+  const g = useGame();
+  const { s, session, tab } = g;
+  const [ledger, setLedger] = useState(false);
+  const play = tab === "play";
   const explorer = s?.explorer ?? "https://testnet.nearblocks.io";
-  const onResult = (msg: string, ok: boolean, tx?: string) => (setToast({ msg, ok, tx }), refresh());
+  const joined = !!(session && s?.me?.player);
+  const step = onboardingStep(s);
+
+  // the play screen is a fixed full-viewport scene (no page scroll); other tabs scroll normally
+  useEffect(() => {
+    document.documentElement.classList.toggle("scene", play);
+    return () => document.documentElement.classList.remove("scene");
+  }, [play]);
+
+  // publish the dock height so the map can keep its towns out from under the HUD
+  useEffect(() => {
+    const el = document.querySelector(".dock");
+    if (!el) return;
+    const ro = new ResizeObserver(() => document.documentElement.style.setProperty("--dock-h", `${Math.ceil(el.getBoundingClientRect().height) + 24}px`));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [play, joined, !!s]);
 
   return (
-    <main>
-      <header>
-        <div className="brand">LOW<span>SEC</span></div>
-        <nav>
-          {(["play", "report", "sim"] as Tab[]).map((t) => (
-            <button key={t} className={tab === t ? "tab sel" : "tab"} onClick={() => setTab(t)}>{{ play: "Play", report: "Economic Report", sim: "Fast-forward" }[t]}</button>
-          ))}
-        </nav>
-        <div className="hdr-right">
-          <SoundToggle />
-          {s && (s.ai.mode === "tee" && s.ai.health?.lastOk === false ? (
-            <span className="badge mock" title={`NEAR AI key set, but the last call failed, so NPCs fell back to the labelled MOCK policy: ${s.ai.health.lastError ?? ""}`}>NPC brains: MOCK fallback (NEAR AI error)</span>
+    <main className={play ? `game play${session ? " in" : " out"}${joined ? " joined" : ""}` : "game page"}>
+      <HudTop s={s} session={session} tab={tab} setTab={g.setTab} ledger={ledger} toggleLedger={() => setLedger((x) => !x)} logout={() => (clearSession(), g.setSession(null))} />
+      <Toasts toasts={g.toasts} dismiss={g.dismiss} explorer={explorer} />
+
+      {!s && <div className="boot"><div className="boot-brand">LOW<span>SEC</span></div><div className="ui-label">Connecting to lowsec.testnet…</div><div className="boot-bar"><i /></div></div>}
+
+      {s && play && (
+        <>
+          <div className="stage map-holder">
+            <div className="stage-sky" aria-hidden />
+            <GameMap s={s} now={g.now} blasts={g.blasts} shake={g.shake} />
+          </div>
+          {g.banner && <AmbushOverlay a={g.banner} />}
+          {g.payoff && <PayoffReceipt p={g.payoff} />}
+
+          {!session ? (
+            <Landing s={s} joining={g.joining} join={g.join} />
+          ) : s.me?.player ? (
+            <div className={step !== null && step < 3 ? "dock onboarding-on" : "dock"}>
+              <Onboarding s={s} />
+              <Actions s={s} session={session} onResult={g.onResult} step={step} now={g.now} docking={g.docking} recordBuy={g.recordBuy} clearCost={g.clearCost} unitCost={g.unitCost} />
+            </div>
           ) : (
-            <span className={s.ai.mode === "tee" ? "badge tee" : "badge mock"} title={s.ai.model}>{s.ai.mode === "tee" ? `NPC brains: NEAR AI TEE (${s.ai.model})` : "NPC brains: MOCK (no NEAR AI key)"}</span>
-          ))}
-          {session && s?.me && (
-            <span className="me">
-              <a href={`${explorer}/address/${session.accountId}`} target="_blank" rel="noreferrer">{session.accountId}</a> · <b>{s.me.balances.gold ?? 0}</b> <GoodIcon good="gold" className="gold-glyph" />
-              <button className="link" onClick={() => (clearSession(), setSession(null))}>log out</button>
-            </span>
+            <div className="dock"><div className="panel registering">Registering… <button onClick={() => act(session, "register", { town: "mina" }).then(() => g.refresh())}>retry</button></div></div>
           )}
-        </div>
-      </header>
 
-      {toast && (
-        <div className={toast.ok ? "toast ok" : "toast bad"} onClick={() => setToast(null)}>
-          <Icon name={toast.ok ? "done" : "ambush"} size={14} className={toast.ok ? "green" : "red"} />{toast.msg} {toast.tx && <a href={`${explorer}/txns/${toast.tx}`} target="_blank" rel="noreferrer">tx ↗</a>}
-        </div>
-      )}
-
-      {!s && <div className="panel">Connecting to {"lowsec.testnet"}…</div>}
-
-      {s && tab === "play" && (
-        <div className="layout">
-          <section className="left">
-            <div className="map-holder">
-              <GameMap s={s} now={now} blasts={blasts} shake={shake} />
-              {banner && <div className="ambush-banner"><Icon name="ambush" size={30} strokeWidth={1.75} />{banner}</div>}
-            </div>
-            {session && <Onboarding s={s} />}
-            {!session ? (
-              <div className="panel login">
-                <h2>Haul cargo. Dodge raiders. Don&apos;t crash the economy.</h2>
-                <p className="muted">Type a name and play. No wallet, no seed phrase, no gas — your account <code>name.{s.contract}</code> is created for you and every move is a gasless meta-transaction.</p>
-                <div className="row-btns">
-                  <input placeholder="your name" value={name} onChange={(e) => setName(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))} onKeyDown={(e) => e.key === "Enter" && name && join()} />
-                  <button className="primary" disabled={!name || !!joining} onClick={join}>{joining || "Play"}</button>
-                </div>
-              </div>
-            ) : s.me?.player ? (
-              <Actions s={s} session={session} onResult={onResult} />
-            ) : (
-              <div className="panel">Registering… <button onClick={() => act(session, "register", { town: "mina" }).then(() => refresh())}>retry</button></div>
-            )}
-          </section>
-          <aside className="right">
-            {s.me?.player && (
+          {session && (
+            /* Intel rail slot (WP3 restyles these components; rendered unchanged here) */
+            <aside id="intel" className="intel">
+              <ContractOfDay account={session?.accountId} />
+              <Leaderboard me={session?.accountId} />
               <div className="panel">
-                <h3>Your hold</h3>
-                <div className="hold">{["gold", ...GOODS].map((g) => <span key={g}><GoodIcon good={g} className={g === "gold" ? "gold-glyph" : undefined} /> {g} <b>{s.me!.balances[g] ?? 0}</b></span>)}</div>
-                <div className="muted small">in {TOWN_LABEL[TOWNS[s.me.player.town]]} · {s.me.player.hauls} hauls · ambushed {s.me.player.ambushed}× · raids won {s.me.player.raids_won}</div>
-                <div className="muted small">NEP-245 tokens on <a href={`${explorer}/address/${s.contract}`} target="_blank" rel="noreferrer">{s.contract}</a></div>
-              </div>
-            )}
-            <ContractOfDay account={session?.accountId} />
-            <Leaderboard me={session?.accountId} />
-            <div className="panel">
-              <h3>NPC traders <span className="muted small">(4 AI + the Guild · hover them on the map)</span></h3>
-              {s.npcs.map((n) => (
-                <div key={n.id} className="npc">
-                  <div><b>{n.name}</b> <a className="muted small" href={`${explorer}/address/${n.id}`} target="_blank" rel="noreferrer">{n.id}</a> · {n.balances.gold} <GoodIcon good="gold" size={12} className="gold-glyph" /></div>
-                  <NpcCard n={n} explorer={explorer} compact />
-                </div>
-              ))}
-            </div>
-            <Deposit />
-            <div className="panel feed">
-              <h3>Activity</h3>
-              <ul>
-                {s.feed.slice(0, 16).map((f) => (
-                  <li key={f.ts + f.text} className={f.type === "ambush" ? "ambush" : f.type === "council" ? "council" : f.type === "contract" ? "contract" : f.ok === false ? "fail" : ""}>
-                    <span className="muted small">{new Date(f.ts).toLocaleTimeString()}</span> {f.text} {f.txHash && <a href={`${explorer}/txns/${f.txHash}`} target="_blank" rel="noreferrer">↗</a>}
-                  </li>
+                <h3>NPC traders <span className="muted small">(4 AI + the Guild · hover them on the map)</span></h3>
+                {s.npcs.map((n) => (
+                  <div key={n.id} className="npc">
+                    <div><b>{n.name}</b> <a className="muted small" href={`${explorer}/address/${n.id}`} target="_blank" rel="noreferrer">{n.id}</a> · {n.balances.gold} <GoodIcon good="gold" size={12} className="gold-glyph" /></div>
+                    <NpcCard n={n} explorer={explorer} compact />
+                  </div>
                 ))}
-              </ul>
-            </div>
-          </aside>
-        </div>
+              </div>
+              <Deposit />
+              <div className="panel feed">
+                <h3>Activity</h3>
+                <ul>
+                  {s.feed.slice(0, 16).map((f) => (
+                    <li key={f.ts + f.text} className={f.type === "ambush" ? "ambush" : f.type === "council" ? "council" : f.type === "contract" ? "contract" : f.ok === false ? "fail" : ""}>
+                      <span className="muted small">{new Date(f.ts).toLocaleTimeString()}</span> {f.text} {f.txHash && <a href={`${explorer}/txns/${f.txHash}`} target="_blank" rel="noreferrer">↗</a>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </aside>
+          )}
+        </>
       )}
-      {s && tab === "report" && <Report />}
-      {s && tab === "sim" && <Simulate />}
-      <footer className="muted small">
-        Lowsec · gold &amp; cargo are NEP-245 on <a href={`${explorer}/address/${s?.contract ?? "lowsec.testnet"}`} target="_blank" rel="noreferrer">{s?.contract ?? "lowsec.testnet"}</a> (testnet) · tick {s?.economy.tick} · epoch {s?.economy.epoch}
-      </footer>
+      {s && ledger && <Ledger s={s} session={session} txlog={g.txlog} onClose={() => setLedger(false)} />}
+
+      {s && tab === "report" && <div className="page-body"><Report /></div>}
+      {s && tab === "sim" && <div className="page-body"><Simulate /></div>}
+      {!play && (
+        <footer className="muted small">
+          Lowsec · gold &amp; cargo are NEP-245 on <a href={`${explorer}/address/${s?.contract ?? "lowsec.testnet"}`} target="_blank" rel="noreferrer">{s?.contract ?? "lowsec.testnet"}</a> (testnet) · tick {s?.economy.tick} · epoch {s?.economy.epoch}
+        </footer>
+      )}
     </main>
   );
 }
