@@ -4,6 +4,7 @@ import type { State } from "@/lib/types";
 import { GOODS, TOWNS, TOWN_LABEL } from "@/lib/types";
 import { CountUp, GoodIcon, Icon, Pill, SegBar, SoundToggle } from "@/ui";
 import { sfx } from "@/lib/sound";
+import { feedText } from "@/lib/errors";
 import type { Session } from "@/lib/near";
 import type { AmbushInfo, Payoff, Tab, Toast, TxLog } from "@/lib/useGame";
 
@@ -14,8 +15,11 @@ const TABS: Record<Tab, string> = { play: "Play", report: "Economic Report", sim
 export function AiChip({ s }: { s: State }) {
   if (s.ai.mode === "tee" && s.ai.health?.lastOk === false)
     return <Pill tone="rule" icon="ai" className="ai-chip" title={`NEAR AI key set, but the last call failed, so NPCs fell back to the labelled MOCK policy: ${s.ai.health.lastError ?? ""}`}>NPC AI: MOCK fallback</Pill>;
+  const verified = (s.ai.health?.verified ?? 0) > 0;
   return s.ai.mode === "tee"
-    ? <Pill tone="tee" icon="tee" className="ai-chip" title={s.ai.model}>NPC AI: NEAR AI TEE</Pill>
+    ? verified
+      ? <Pill tone="tee" icon="tee" className="ai-chip" title={`${s.ai.model} · ${s.ai.health?.verified} decisions with a verified NEAR AI TEE signature`}>NPC AI: NEAR AI TEE · verified</Pill>
+      : <Pill tone="rule" icon="tee" className="ai-chip" title={`${s.ai.model} · NEAR AI key set, no decision verified yet`}>NPC AI: NEAR AI TEE · not yet verified</Pill>
     : <Pill tone="rule" icon="ai" className="ai-chip" title="No NEAR AI key: NPC decisions come from a local rule policy">NPC AI: MOCK</Pill>;
 }
 
@@ -23,7 +27,11 @@ export function HudTop({ s, session, tab, setTab, ledger, toggleLedger, logout }
   s: State | null; session: Session | null; tab: Tab; setTab: (t: Tab) => void; ledger: boolean; toggleLedger: () => void; logout: () => void;
 }) {
   const me = s?.me;
-  const cargo = me ? GOODS.reduce((a, g) => a + (me.balances[g] ?? 0), 0) : 0;
+  // cargo on a convoy sits in contract escrow, so balances read 0 during the trip: show it as "in transit"
+  const haul = me?.player?.haul;
+  const transit = haul && haul.qty > 0 ? { good: GOODS[haul.good], qty: haul.qty } : null;
+  const held = (g: string) => (me?.balances[g] ?? 0) + (transit?.good === g ? transit.qty : 0);
+  const cargo = me ? GOODS.reduce((a, g) => a + held(g), 0) : 0;
   return (
     <header className="hud-top">
       <div className="brand">LOW<span>SEC</span></div>
@@ -36,10 +44,10 @@ export function HudTop({ s, session, tab, setTab, ledger, toggleLedger, logout }
         {s && <AiChip s={s} />}
         {session && me?.player && (
           <div className="hold-chip" title={`Docked in ${TOWN_LABEL[TOWNS[me.player.town]]} · ${me.player.hauls} hauls · ambushed ${me.player.ambushed}× · raids won ${me.player.raids_won}`}>
-            <span className="ui-label">Cargo</span>
+            <span className="ui-label">{transit ? <span className="in-transit">Cargo · {transit.qty} {transit.good} in transit</span> : "Cargo"}</span>
             <SegBar total={Math.min(25, s!.params.cargo_cap)} filled={Math.round((cargo / s!.params.cargo_cap) * Math.min(25, s!.params.cargo_cap))} className="hold-bar" />
             <span className="hold-goods">
-              {GOODS.map((g) => <span key={g} className={(me.balances[g] ?? 0) > 0 ? "on" : ""}><GoodIcon good={g} size={13} /><CountUp value={me.balances[g] ?? 0} duration={350} /></span>)}
+              {GOODS.map((g) => <span key={g} className={held(g) > 0 ? (transit?.good === g ? "on transit" : "on") : ""} title={transit?.good === g ? `${transit.qty} ${g} on the convoy (contract escrow until arrival)` : undefined}><GoodIcon good={g} size={13} /><CountUp value={held(g)} duration={350} /></span>)}
             </span>
           </div>
         )}
@@ -110,7 +118,7 @@ export function Ledger({ s, session, txlog, onClose }: { s: State; session: Sess
       <ul className="ledger-list">
         {chain.map((f) => (
           <li key={f.ts + f.text} className={f.type === "ambush" ? "bad" : ""}>
-            <span className="lt num">{new Date(f.ts).toLocaleTimeString("en-GB")}</span><span className="lm">{f.text}</span>
+            <span className="lt num">{new Date(f.ts).toLocaleTimeString("en-GB")}</span><span className="lm">{feedText(f)}</span>
             <a href={`${ex}/txns/${f.txHash}`} target="_blank" rel="noreferrer" title={f.txHash}><Icon name="tx" size={12} /></a>
           </li>
         ))}
@@ -130,10 +138,11 @@ function useLater(v: number, ms: number) {
 export function AmbushOverlay({ a, onDismiss }: { a: AmbushInfo; onDismiss?: () => void }) {
   const burned = useLater(a.burned, 450), looted = useLater(a.looted, 600), delivered = useLater(a.delivered, 750);
   return (
-    <div className="ambush-banner" role="alert" onClick={onDismiss} title="Click to dismiss">
+    <div className={a.replay ? "ambush-banner replay" : "ambush-banner"} role="alert" onClick={onDismiss} title="Click to dismiss">
       <div className="ab-vignette" />
       <div className="ab-core">
         <div className="ab-rule" />
+        {a.replay && <div className="ab-replay">◀◀ Replay · {a.replay.pilot}&apos;s real ambush at {new Date(a.replay.ts).toLocaleTimeString("en-GB")} · from the activity feed</div>}
         <div className="ab-kicker"><Icon name="ambush" size={18} strokeWidth={2} /> Raider contact · {a.who}</div>
         <div className="ab-title">Convoy intercepted</div>
         <div className="ab-nums">

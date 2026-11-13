@@ -41,8 +41,8 @@
   --ff-body: var(--font-body), "Arial Narrow", system-ui, sans-serif;
 
   /* type scale (px) */
-  --fs-label: 11px;   /* mono caps labels, tracking --track-label */
-  --fs-micro: 10px;   /* pills, tooltip keys */
+  --fs-label: 12px;   /* mono caps labels, tracking --track-label */
+  --fs-micro: 12px;   /* pills, tooltip keys */
   --fs-small: 12px;
   --fs-body: 14px;
   --fs-value: 16px;   /* mono tabular values */

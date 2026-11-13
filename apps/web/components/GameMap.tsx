@@ -54,10 +54,12 @@ const DROP = [64, 112, 70];
 export interface GameMapProps {
   s: State; now: number; blasts?: Blast[]; shake?: boolean;
   fullBleed?: boolean; insets?: Insets; burnCounter?: "top-left" | "bottom-left" | "bottom-right" | "none"; legend?: boolean;
+  /** "Replay last ambush" on the burn counter: label of the source ambush (null hides the button). */
+  replay?: { label: string; onReplay: () => void } | null;
   onSelectTown?: (i: number | null) => void; onSelectPilot?: (id: string | null) => void; className?: string;
 }
 
-export function GameMap({ s, now, blasts = [], shake = false, fullBleed = false, insets, burnCounter = "top-left", legend = true, onSelectTown, onSelectPilot, className }: GameMapProps) {
+export function GameMap({ s, now, blasts = [], shake = false, fullBleed = false, insets, burnCounter = "top-left", legend = true, replay = null, onSelectTown, onSelectPilot, className }: GameMapProps) {
   const wrap = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ W: 1040, H: 560 });
   useEffect(() => {
@@ -243,6 +245,11 @@ export function GameMap({ s, now, blasts = [], shake = false, fullBleed = false,
             {burnFloats.map((f) => <span key={f.id} className="sm-burn-float">+{f.n}</span>)}
           </div>
           <div className="bc-sub">{s.economy.total.ambushes ?? 0} ambushes · gone forever</div>
+          {replay && (
+            <button className="bc-replay" onClick={replay.onReplay} title={`Replays the visual of a real ambush from the activity feed (${replay.label}). No new roll, no transaction.`}>
+              ▶ Replay last ambush <span>{replay.label}</span>
+            </button>
+          )}
         </div>
       )}
 
@@ -287,8 +294,23 @@ export function GameMap({ s, now, blasts = [], shake = false, fullBleed = false,
       {tipShip && (() => {
         const p = shipPos.current[tipShip.id];
         const sc = p ? toScreen(p.x, p.y) : { x: size.W - 360, y: 20 };
-        const W = 340, left = sc.x > size.W / 2 ? sc.x - 36 - W : sc.x + 36;
-        const top = Math.max(8, Math.min(sc.y - 90, size.H - 340));
+        // place the card where it covers the fewest station price boards (and stays clear of the dock / rail)
+        const W = 340, H = 330;
+        const ins = { right: insets?.right ?? 0, bottom: insets?.bottom ?? 0, top: insets?.top ?? 8 };
+        const maxL = Math.max(8, size.W - ins.right - W - 8), maxT = Math.max(ins.top, size.H - ins.bottom - H - 8);
+        const boards = POS.flatMap((P, i) => {
+          const L = labelBox(i), a = toScreen(P.x + L.x * sp, P.y + L.y * sp), b = toScreen(P.x - 46 * sp, P.y - 46 * sp);
+          return [{ x: a.x, y: a.y, w: L.w * sp * v.k, h: L.h * sp * v.k }, { x: b.x, y: b.y, w: 92 * sp * v.k, h: 92 * sp * v.k }];
+        });
+        const overlap = (l: number, t: number) => boards.reduce((acc, r) => acc + Math.max(0, Math.min(l + W, r.x + r.w) - Math.max(l, r.x)) * Math.max(0, Math.min(t + H, r.y + r.h) - Math.max(t, r.y)), 0);
+        const clampP = (l: number, t: number) => ({ l: Math.min(Math.max(8, l), maxL), t: Math.min(Math.max(ins.top, t), maxT) });
+        const cands = [
+          clampP(sc.x + 36, sc.y - 90), clampP(sc.x - 36 - W, sc.y - 90),
+          clampP(sc.x - W / 2, sc.y - H - 30), clampP(sc.x - W / 2, sc.y + 30),
+          clampP(sc.x + 36, sc.y - H + 40), clampP(sc.x - 36 - W, sc.y - H + 40),
+        ];
+        const bestC = cands.reduce((a, c) => (overlap(c.l, c.t) < overlap(a.l, a.t) - 1 ? c : a), cands[sc.x > size.W / 2 ? 1 : 0]);
+        const left = bestC.l, top = bestC.t;
         const pl = tipShip.npc?.player ?? s.me?.player ?? null;
         const h = tipShip.haul;
         return (

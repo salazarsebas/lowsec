@@ -22,7 +22,9 @@ header.hud-top::after { content: ""; position: absolute; left: 0; bottom: -1px; 
 .hud-top .hdr-right { margin-left: auto; display: flex; align-items: center; gap: var(--s-4); flex-wrap: nowrap; }
 .ai-chip { opacity: .85; }
 .hold-chip { display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto; column-gap: var(--s-3); row-gap: 3px; align-items: center; padding-left: var(--s-4); border-left: 1px solid var(--line); }
-.hold-chip .ui-label { font-size: 9.5px; }
+.hold-chip .ui-label { font-size: 11px; }
+.hold-chip .in-transit { color: var(--signal, #FF4700); }
+.hold-chip .hold-goods span.on.transit { color: var(--signal, #FF4700); }
 .hold-chip .hold-bar { grid-column: 1; width: 120px; }
 .hold-chip .hold-bar i { height: 6px; min-width: 2px; }
 .hold-chip .hold-goods { grid-column: 2; grid-row: 1 / span 2; display: flex; gap: var(--s-3); font: 600 13px var(--ff-mono); color: var(--ink-3); }
@@ -320,3 +322,39 @@ header.hud-top::after { content: ""; position: absolute; left: 0; bottom: -1px; 
 
 /* payoff hint: the 1280 media rule for the big profit number must not hit the inline "Sell all" */
 .po-total .po-hint b { font: inherit; color: var(--ink); text-shadow: none; }
+/* fix-web: replayed ambush is labelled so it is never mistaken for a live roll */
+.ab-replay { display: inline-block; align-self: center; margin-bottom: 8px; padding: 4px 12px; border: 1px solid var(--ink); color: var(--ink); background: rgba(0, 0, 0, .55); font: 700 14px var(--ff-mono); letter-spacing: .14em; text-transform: uppercase; }
+.ambush-banner.replay .ab-title::before { content: "REPLAY · "; color: var(--ink-2); }
+
+/* ---- fix-web: dock legibility (judge review) — min 12px, idle panels readable (≥60%), labels at ink-2 ---- */
+.dock .panel.dim { opacity: .68; filter: saturate(.75); } .dock .panel.dim:hover { opacity: 1; filter: none; }
+.tstep { opacity: .62; } .tstep.done { opacity: .75; }
+.dock .ui-label, .tracker .ui-label { color: var(--ink-2); font-size: 12px; }
+.dock-note { font-size: 12px; color: var(--ink-2); }
+.dock-market td.run .to { font-size: 12px; }
+.dock-market .row-btns button { font-size: 12px; }
+.dock-market .tag { font-size: 12px; }
+.dock-market table.market th { font-size: 12px; }
+.rc-kv .ui-label, .raid-kv .ui-label { font-size: 12px; }
+.tstep .num { font-size: 12px; }
+.tracker .tdesc { font-size: 13px; color: var(--ink-2); }
+.ledger-btn, .logout, .ledger-list .lt { font-size: 12px; }
+.hud-top button.tab { font-size: 12px; }
+.hot-lane { display: flex; align-items: center; gap: 6px; margin: 2px 0 6px; font: 500 12px var(--ff-mono); color: var(--sec-low); }
+.hot-lane b { color: var(--ink); }
+.hot-lane .link { margin-left: auto; font: 600 12px var(--ff-mono); color: var(--signal); background: none; border: 0; text-decoration: underline; cursor: pointer; text-transform: uppercase; letter-spacing: .08em; }
+@media (max-width: 1440px), (max-height: 800px) {
+  .dock-market table.market th { font-size: 12px; }
+  .dock-market .row-btns button { font-size: 12px; padding: 0 6px; }
+  .hud-top button.tab { font-size: 12px; }
+}
+@media (min-width: 1501px) { .tracker .tstep.now .tdesc { white-space: normal; overflow: visible; max-width: 640px; } }
+.hot-lane { white-space: nowrap; min-width: 0; } .hot-lane .hl-txt { overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 1440px), (max-height: 800px) {
+  .dock-market .row-btns button { padding: 0 5px; letter-spacing: .02em; }
+  .dock-market td.run .to { display: none; }
+}
+@media (max-width: 1500px) {
+  .dock-market { flex: 1.35 1 0; } .dock-haul { flex: 1.1 1 0; } .dock-raid { flex-basis: 160px; }
+  .tracker .tdesc { max-width: 420px; }
+}

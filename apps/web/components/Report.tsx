@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { LineChart, councilMarkers } from "./LineChart";
+import { LineChart, councilMarkers, rollingMean } from "./LineChart";
 import { AttestationBadge } from "./Badge";
 import { Panel, Stat, CountUp, Icon } from "@/ui";
 import "@/styles/econ.css";
@@ -35,15 +35,36 @@ function BandGauge({ value, min, max, band, format, midLabel }: {
   );
 }
 
+const RECENT_EPOCHS = 60;
+const CLIP = 5;
+
+/** Loading state: skeleton cards in the final layout instead of a bare "loading…" line (the report can take a while on testnet). */
+function ReportSkeleton() {
+  return (
+    <div className="report econ" aria-busy="true">
+      <Panel title="Economic Report" sub="reading the ledger from the contract…">
+        <div className="econ-hero">
+          {[0, 1, 2].map((i) => <div key={i} className="econ-skel"><i className="short" /><i className="big" /><i /><i className="short" /></div>)}
+        </div>
+        <div className="econ-hero">
+          {[0, 1, 2].map((i) => <div key={i} className="econ-skel" style={{ minHeight: 70 }}><i className="short" /><i className="big" /></div>)}
+        </div>
+      </Panel>
+      <Panel title="Gold growth per epoch" sub="loading epoch records…"><div className="econ-skel econ-skel-chart"><i className="short" /><i /><i /><i className="short" /></div></Panel>
+    </div>
+  );
+}
+
 export function Report() {
   const [r, setR] = useState<any>(null);
+  const [range, setRange] = useState<"recent" | "all">("recent");
   useEffect(() => {
     const load = () => fetch("/api/report").then((x) => x.json()).then(setR).catch(() => {});
     load();
     const t = setInterval(load, 5000);
     return () => clearInterval(t);
   }, []);
-  if (!r) return <Panel className="report">loading report…</Panel>;
+  if (!r) return <ReportSkeleton />;
 
   const e = r.economy;
   const t = e.total ?? {};
@@ -59,7 +80,10 @@ export function Report() {
   const nextFaucet = num(e.rule_next_faucet_bps ?? sig?.next_faucet_bps ?? faucet);
   const floor = 70, ceil = 110; // council_min/max_faucet_bps: 7000 / 11000 — public rule, [70%, 110%]
 
-  const recs: EpochRec[] = Array.isArray(r.epochs) ? r.epochs : [];
+  const allRecs: EpochRec[] = Array.isArray(r.epochs) ? r.epochs : [];
+  // default view: the last ~60 epochs (launch spikes squash everything else); "All" shows the full window
+  const lastEp = allRecs.length ? Math.max(...allRecs.map((x) => num(x.epoch))) : 0;
+  const recs = range === "all" ? allRecs : allRecs.filter((x) => num(x.epoch) + Math.max(1, num(x.span ?? 1)) > lastEp - RECENT_EPOCHS);
   const closed = recs.filter((x) => num(x.supply_start) > 0);
   const inflXs = closed.map((x) => num(x.epoch));
   const inflSpans = closed.map((x) => Math.max(1, num(x.span ?? 1)));
@@ -77,6 +101,8 @@ export function Report() {
   }
   const hasChart = closed.length >= 1 && inflation.some((v) => Number.isFinite(v));
   const markers = councilMarkers(r.council ?? []);
+  const rolling = rollingMean(inflation, 5);
+  const overflow = inflation.filter((v) => Math.abs(v) > CLIP).length;
 
   const barMax = Math.max(minted, burned, 1);
   const cargo = num(t.cargo_burned_units);
@@ -120,6 +146,7 @@ export function Report() {
               midLabel={`target 0–${target.toFixed(0)}%`}
             />
             <p className="muted small">Live vs epoch open ({start.toLocaleString()} → {gold.toLocaleString()} ◎). Green band is the Council target.</p>
+            {sig && <p className="econ-gap-note">Different windows: this card is the current epoch incl. new-player starter grants; the Council acts on a {sig.epochs_covered}-epoch mean without grants ({(sig.signal_bps / 100).toFixed(2)}%/epoch), so it can raise while this reads red.</p>}
           </div>
 
           <div className="econ-hero-card">
@@ -172,19 +199,25 @@ export function Report() {
 
       <Panel
         title="Gold growth per epoch"
-        sub="bars cover each record's span · no interpolation across merges · clipped at ±8%"
-        right={<span className="muted small">x = epoch · gold = start→end of each record</span>}
+        sub={`${range === "all" ? "full on-chain window" : `last ${RECENT_EPOCHS} epochs`} · clamped at ±${CLIP}%${overflow ? ` (${overflow} bar${overflow > 1 ? "s" : ""} past the edge, capped in white)` : ""} · line = 5-record rolling mean`}
+        right={
+          <span className="econ-chart-tools">
+            <button className={range === "recent" ? "sel" : ""} onClick={() => setRange("recent")}>Last {RECENT_EPOCHS}</button>
+            <button className={range === "all" ? "sel" : ""} onClick={() => setRange("all")}>All</button>
+          </span>
+        }
       >
         {hasChart ? (
           <LineChart
             height={220}
             band={[0, target]}
-            clip={[-8, 8]}
+            clip={[-CLIP, CLIP]}
             yFmt={(v) => `${v.toFixed(1)}%`}
             yFmtRight={(v) => v >= 1000 ? `${Math.round(v / 1000)}k` : `${Math.round(v)}`}
             markers={markers}
             series={[
               { name: "inflation % / epoch", color: "var(--loss)", values: inflation, xs: inflXs, spans: inflSpans, kind: "bars" },
+              { name: "5-record rolling mean", color: "var(--ink)", values: rolling, xs: inflXs.map((x, i) => x + inflSpans[i] / 2) },
               { name: "gold supply", color: "var(--gold)", values: goldVs, xs: goldXs, axis: "right", kind: "area", fill: true },
             ]}
           />

@@ -2,6 +2,7 @@
 import type { State } from "@/lib/types";
 import { GOODS, TOWNS, TOWN_LABEL } from "@/lib/types";
 import { GoodIcon, Icon } from "@/ui";
+import { bestTrade, hotLane } from "@/lib/advice";
 
 /** Onboarding step derived from player state (same rule as the original Goals.tsx Onboarding):
  *  0 buy · 1 pick a lane · 2 sell (on the road or carrying cargo after a haul) · 3 loop done.
@@ -21,12 +22,28 @@ export function Onboarding({ s }: { s: State }) {
   const step = onboardingStep(s);
   if (step === null || !s.me?.player) return null;
   const p = s.me.player;
-  const home = GOODS[p.town];
-  const best = bestSale(s, p.town);
+  const here = p.town;
+  const local = bestTrade(s, here);
+  const global = bestTrade(s, null);
+  const buyGood = local && local.profit > 0 ? local.good : GOODS[here];
+  const best = bestSale(s, here);
+  const hot = hotLane(s);
+  const hotTouchesHere = hot && (hot.a === here || hot.b === here);
+  const T = (i: number) => TOWN_LABEL[TOWNS[i]];
   const steps = [
-    { t: <>Buy <GoodIcon good={home} size={13} /> {home} at {TOWN_LABEL[TOWNS[p.town]]}</>, d: <>{TOWN_LABEL[TOWNS[p.town]]} makes {home}, so it&apos;s cheapest here. Hit <b>Buy</b>.</> },
-    { t: "Pick a lane", d: <>Safe is slow with a big toll. <b className="lowsec-txt">Lowsec</b> is 3× faster, but raiders lurk. Then <b>Depart</b>.</> },
-    { t: "Sell where scarce", d: p.haul ? "Convoy in transit. Arrival settles on-chain." : <>Towns that don&apos;t make a good pay more{best ? <> ({TOWN_LABEL[TOWNS[best.town]]} pays {best.bid} for {home})</> : null}. Hit <b>Sell all</b>.</> },
+    {
+      t: <>Buy <GoodIcon good={buyGood} size={13} /> {buyGood} at {T(here)}</>,
+      d: local && local.profit > 0
+        ? <>Best run now (live prices): {local.good} → {T(local.to)} ≈ <b className="pos">+{local.profit}◎</b> for {local.qty}.{global && global.from !== here && global.profit > local.profit + 50 ? <> Map best: {global.good} {T(global.from)}→{T(global.to)} ≈ +{global.profit}◎ (fly empty to {T(global.from)} first).</> : null}</>
+        : <>{T(here)} makes {GOODS[here]}, so it&apos;s cheapest here. Hit <b>Buy</b>.</>,
+    },
+    {
+      t: "Pick a lane",
+      d: hot
+        ? <><b className="lowsec-txt">Raiders are camping {T(hot.a)}–{T(hot.b)} now</b>: {hot.risk}% ambush on that Lowsec lane (real on-chain roll){hotTouchesHere ? "" : `, reachable via ${T(hot.a)}`}. Safe is slow with a big toll. Then <b>Depart</b>.</>
+        : <>Safe is slow with a big toll. <b className="lowsec-txt">Lowsec</b> is 3× faster, but raiders lurk. Then <b>Depart</b>.</>,
+    },
+    { t: "Sell where scarce", d: p.haul ? "Convoy in transit. Arrival settles on-chain." : <>Towns that don&apos;t make a good pay more{best ? <> ({T(best.town)} pays {best.bid} for {GOODS[here]})</> : null}. Hit <b>Sell all</b>.</> },
   ];
   return (
     <div className="tracker" data-step={step}>

@@ -3,8 +3,9 @@ import { useRef, useState } from "react";
 import type { State } from "@/lib/types";
 import { GOODS, LANES, TOWNS, TOWN_LABEL, ambushPct, laneOf } from "@/lib/types";
 import { GoodIcon, Icon, Pill, Progress, SecTag, riskToSec } from "@/ui";
-import { act, type Session } from "@/lib/near";
+import type { RelayResult, Session } from "@/lib/near";
 import { sfx } from "@/lib/sound";
+import { bestTrade, hotLane } from "@/lib/advice";
 import type { Toast } from "@/lib/useGame";
 
 type OnResult = (msg: string, ok: boolean, tx?: string, kind?: Toast["kind"]) => void;
@@ -15,13 +16,15 @@ const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
  *  Recorder/e2e contract: h3 "Market · <Town>", rows <tr> with Buy/Sell all, input[type=range] (qty),
  *  .panel with h3 "Haul" holding 2 <select>s (cargo, destination), button.route Safe/Lowsec,
  *  button.primary "Depart…", .panel "Raid a Lowsec lane" with a lane <select> + "Post raid", h3 "On the road". */
-export function Actions({ s, session, onResult, step, now, docking, recordBuy, clearCost, unitCost }: {
+export function Actions({ s, session, onResult, runTx, pending, step, now, docking, recordBuy, clearCost, unitCost }: {
   s: State; session: Session; onResult: OnResult; step: number | null; now: number; docking: boolean;
+  runTx: (method: string, args: Record<string, any>, label: string, kind: Toast["kind"]) => Promise<RelayResult | null>; pending: string | null;
   recordBuy: (good: string, qty: number, gold: number) => void; clearCost: (good: string) => void; unitCost: (good: string) => number | null;
 }) {
   const me = s.me!;
   const p = s.params;
-  const [busy, setBusy] = useState(false);
+  // one tx at a time across the whole dock: buttons stay disabled until the tx resolves and state is refetched
+  const busy = !!pending;
   const [qty, setQty] = useState(10);
   const [dest, setDest] = useState<number | null>(null);
   const [route, setRoute] = useState<"safe" | "lowsec">("lowsec");
@@ -34,19 +37,12 @@ export function Actions({ s, session, onResult, step, now, docking, recordBuy, c
   const town = s.economy.towns[here];
 
   async function run(method: string, args: Record<string, unknown>, label: string, kind: Toast["kind"], after?: () => void) {
-    setBusy(true);
-    try {
-      const r = await act(session, method, args, label);
-      if (r.ok) after?.();
-      sfx(r.ok ? (kind === "haul" ? "launch" : "confirm") : "error");
-      onResult(r.ok ? label : `${label} failed: ${r.error}`, r.ok, r.txHash, kind);
-    } catch (e: any) {
-      sfx("error");
-      onResult(String(e?.message ?? e), false, undefined, kind);
-    } finally {
-      setBusy(false);
-    }
+    const r = await runTx(method, args as Record<string, any>, label, kind);
+    if (r?.ok) after?.();
+    sfx(r?.ok ? (kind === "haul" ? "launch" : "confirm") : "error");
   }
+  void session; void onResult; // kept in the props contract for page.tsx / recorder
+  const pendLabel = (m: string, idle: React.ReactNode, busyText: string) => (pending === m ? <><span className="spin" /> {busyText}</> : idle);
 
   // ---------- on the road: convoy HUD ----------
   if (me.player.haul) {
@@ -117,7 +113,10 @@ export function Actions({ s, session, onResult, step, now, docking, recordBuy, c
   const exp = (r: 0 | 1) => Math.round(estRevenue * (1 - (r ? lowRisk / 100 : 0) * lossFrac)) - p.toll_gold[r] - basis;
   const newChance = ambushPct(p, s.economy.raids.filter((r) => r.lane === lane).length + 1);
   const lit = (k: "market" | "haul" | "raid") => step === null || step >= 3 ? "" : (step === 1 ? k === "haul" : k === "market") ? " lit" : " dim";
-  const homeGood = GOODS[here];
+  const sugg = bestTrade(s, here);
+  const homeGood = sugg && sugg.profit > 0 ? sugg.good : GOODS[here];
+  const hot = hotLane(s);
+  const hotDest = hot && (hot.a === here || hot.b === here) ? (hot.a === here ? hot.b : hot.a) : null;
 
   const routeCard = (r: 0 | 1) => {
     const low = r === 1;
@@ -198,12 +197,18 @@ export function Actions({ s, session, onResult, step, now, docking, recordBuy, c
           <label><span className="ui-label">Cargo</span><select value={cargo} onChange={(e) => setCargo(e.target.value)}>{GOODS.map((g) => <option key={g} value={g}>{g} ({me.balances[g] ?? 0})</option>)}</select></label>
           <label><span className="ui-label">Destination</span><select value={d} onChange={(e) => setDest(Number(e.target.value))}>{destOpts.map((t) => <option key={t} value={t}>{TOWN_LABEL[TOWNS[t]]}</option>)}</select></label>
         </div>
+        {hot && (
+          <div className="hot-lane">
+            <Icon name="raid" size={13} /> <span className="hl-txt">Raiders on <b>{hot.name}</b> · {hot.risk}% ambush</span>
+            {hotDest !== null && hotDest !== d && <button className="link" onClick={() => (setDest(hotDest), setRoute("lowsec"))}>fly it</button>}
+          </div>
+        )}
         <div className="routes">{routeCard(0)}{routeCard(1)}</div>
         <div className="haul-go">
           <span className="haul-est">{holding ? <>Sale in {TOWN_LABEL[TOWNS[d]]} <b className="num gold">{estRevenue}</b></> : <span className="muted">Empty hold: buy cargo first</span>}</span>
           {holding ? (
             <button className={step === 1 ? "primary depart cue" : "primary depart"} disabled={busy} onClick={() => run("start_haul", { to: TOWNS[d], route, good: cargo, qty: holding }, `departed with ${holding} ${cargo} to ${TOWNS[d]} via ${route}`, "haul")}>
-              Depart with {holding} {cargo} → {TOWN_LABEL[TOWNS[d]]}
+              {pendLabel("start_haul", <>Depart with {holding} {cargo} → {TOWN_LABEL[TOWNS[d]]}</>, "Departing… signing on-chain")}
             </button>
           ) : (
             <button className="depart" disabled={busy} onClick={() => run("start_haul", { to: TOWNS[d], route, good: null, qty: 0 }, `travelled empty to ${TOWNS[d]}`, "haul")}>Travel empty → {TOWN_LABEL[TOWNS[d]]}</button>

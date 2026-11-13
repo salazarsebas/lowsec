@@ -48,6 +48,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@lowsec/sim':
+        specifier: workspace:*
+        version: link:../../packages/sim
       lucide-react:
         specifier: ^1.72.0
         version: 1.72.0(@types/react@19.3.0)(react@19.3.1)

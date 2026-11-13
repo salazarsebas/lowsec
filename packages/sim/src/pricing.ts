@@ -2,7 +2,7 @@
  * Pricing + risk rules. Integer math only, mirrored 1:1 in contracts/lowsec/src/rules.rs
  * (parity is checked by test vectors: packages/sim/test/vectors.json <-> cargo test).
  */
-import type { Params, Good, Route } from "./params.js";
+import type { Params, Good, Route } from "./params";
 
 /** Town ask price (gold/unit) for a good at a given stock: base * target / stock, clamped. */
 export function askPrice(p: Params, good: Good, stock: number): number {

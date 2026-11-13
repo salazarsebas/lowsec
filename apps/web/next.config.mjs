@@ -3,6 +3,8 @@
  *  LOWSEC_SERVER_URL to the public URL of apps/server. */
 const server = process.env.LOWSEC_SERVER_URL ?? "http://localhost:8787";
 export default {
+  // the Fast-forward runs the same headless sim in the browser (TypeScript source, workspace package)
+  transpilePackages: ["@lowsec/sim"],
   async rewrites() {
     return [{ source: "/api/:path*", destination: `${server}/api/:path*` }];
   },

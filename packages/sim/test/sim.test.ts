@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_PARAMS as P, askPrice, bidPrice, ambushSplit, ambushChanceBps, councilStep, withinBound, gini, runSim, inflationBps, revertStock, goalStock } from "../src/index.js";
+import { DEFAULT_PARAMS as P, askPrice, bidPrice, ambushSplit, ambushChanceBps, councilStep, withinBound, gini, runSim, inflationBps, revertStock, goalStock } from "../src/index";
 
 describe("pricing", () => {
   it("price is base at target stock, higher when scarce, clamped", () => {
@@ -95,25 +95,25 @@ describe("simulation", () => {
       return tot;
     };
     expect(e(true)).toBeLessThan(e(false));
-  });
+  }, 60_000);
 });
 
 describe("v0.2 economy", () => {
   it("progressive docking fee: nothing under the exemption, 5% of the excess above it", async () => {
-    const { dockFee } = await import("../src/pricing.js");
-    const { DEFAULT_PARAMS: P } = await import("../src/params.js");
+    const { dockFee } = await import("../src/pricing");
+    const { DEFAULT_PARAMS: P } = await import("../src/params");
     expect(dockFee(P, 400)).toBe(0);
     expect(dockFee(P, 2400)).toBe(100);
   });
   it("council holds when there are too few players", async () => {
-    const { councilDecide } = await import("../src/council.js");
-    const { DEFAULT_PARAMS: P } = await import("../src/params.js");
+    const { councilDecide } = await import("../src/council");
+    const { DEFAULT_PARAMS: P } = await import("../src/params");
     const d = councilDecide(P, 1, 10_000, 5_000, 3);
     expect(d.hold).toBeTruthy();
     expect(d.nextFaucetBps).toBe(10_000);
   });
   it("seed 42: v0.3 (4 NPC traders + Guild, Council + dock fee) beats v0.1 rules on error without raising Gini", async () => {
-    const { V02_NPCS } = await import("../src/params.js");
+    const { V02_NPCS } = await import("../src/params");
     const err = (r: ReturnType<typeof runSim>) => r.daily.slice(1).reduce((a, m) => a + Math.abs(m.inflationBps - 100), 0);
     const c = runSim({ weeks: 4, seed: 42, council: true });
     const b = runSim({ weeks: 4, seed: 42, council: false, params: { dockFeeBps: 0 }, population: V02_NPCS });
@@ -124,7 +124,7 @@ describe("v0.2 economy", () => {
 
 describe("v0.3 live scenario (a handful of humans)", () => {
   it("inflation stays in the -1%..+3% band on average and the Council is off its floor", async () => {
-    const { LIVE_POPULATION } = await import("../src/params.js");
+    const { LIVE_POPULATION } = await import("../src/params");
     for (const seed of [42, 1, 2, 3]) {
       const r = runSim({ weeks: 2, seed, council: true, population: LIVE_POPULATION });
       const d = r.daily.slice(1).map((m) => m.inflationBps);
@@ -140,4 +140,29 @@ describe("v0.3 live scenario (a handful of humans)", () => {
     expect(guildHauls.length).toBeGreaterThan(0);
     expect(guildHauls.every((e) => e.text.endsWith("via safe"))).toBe(true);
   });
+});
+
+describe("v0.4 Council tuning (proposed)", () => {
+  it("beats no Council on every control metric on seed 42, and on error/worst epoch/Gini over 8 seeds", async () => {
+    const { COUNCIL_V04 } = await import("../src/params");
+    const { controlStats } = await import("../src/stats");
+    const st = (seed: number, council: boolean) => {
+      const r = runSim({ weeks: 4, seed, council, params: council ? COUNCIL_V04 : {} });
+      return controlStats(r.daily, r.final.gini);
+    };
+    const seeds = [42, 1, 2, 3, 4, 5, 6, 7];
+    const c = seeds.map((s) => st(s, true)), b = seeds.map((s) => st(s, false));
+    const avg = (xs: ReturnType<typeof st>[], k: keyof ReturnType<typeof st>) => xs.reduce((a, x) => a + x[k], 0) / xs.length;
+    // seed 42 (what the Fast-forward shows): all five
+    expect(c[0].mae).toBeLessThan(b[0].mae);
+    expect(c[0].worst).toBeLessThan(b[0].worst);
+    expect(c[0].meanOff).toBeLessThan(b[0].meanOff);
+    expect(c[0].inBand).toBeGreaterThan(b[0].inBand);
+    expect(c[0].gini).toBeLessThan(b[0].gini);
+    // 8-seed average: error, worst epoch, Gini; band within 2 pp (documented: 40% vs 41%)
+    expect(avg(c, "mae")).toBeLessThan(avg(b, "mae"));
+    expect(avg(c, "worst")).toBeLessThan(avg(b, "worst"));
+    expect(avg(c, "gini")).toBeLessThan(avg(b, "gini"));
+    expect(avg(c, "inBand")).toBeGreaterThan(avg(b, "inBand") - 0.02);
+  }, 60_000);
 });

@@ -24,7 +24,7 @@ const W = document.getElementById("w");
 if (k === "title") W.innerHTML = `<div class="logo">LOW<b>SEC</b></div><div class="sub">A player-driven trading economy on NEAR.<br>Humans and AI traders share one market, and every gold coin is on-chain.</div>`;
 else if (k === "close") W.innerHTML = `<div class="logo">LOW<b>SEC</b></div>
   <div><span class="pill on">Games With Real Economies</span><span class="pill">Agents</span><span class="pill">Swarms</span></div>
-  <div class="small">NEAR testnet · NEP-245 multi-token · gasless meta-transactions<br>NEAR AI Cloud (TEE) decisions anchored on-chain · NEAR Intents 1Click</div>
+  <div class="small">NEAR testnet · NEP-245 multi-token · gasless meta-transactions · NEAR Intents 1Click quote<br>AI decisions logged on-chain · ${q.get("tee") === "1" ? "NEAR AI Cloud private-TEE inference, attestation checked" : "built for NEAR AI Cloud private-TEE inference (attestation check) · MOCK fallback until credits are active"}</div>
   <div class="sub">Open source (MIT) · <span class="url">github.com/salazarsebas/lowsec</span></div>`;
 else W.innerHTML = `<div class="sub">${q.get("t") ?? ""}</div>`;
 </script></body></html>

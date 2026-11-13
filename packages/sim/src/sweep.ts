@@ -5,8 +5,8 @@
  *  - live:   3 humans who act now and then, no wave — what a judge sees on the hosted demo
  * Rows: v0.1 rules, v0.2 (2 NPCs, Council + dock fee), v0.3 (4 NPC traders + the Guild) with and without Council.
  */
-import { runSim, type SimResult } from "./sim.js";
-import { LIVE_POPULATION, V02_NPCS, type Params, type Population } from "./params.js";
+import { runSim, type SimResult } from "./sim";
+import { COUNCIL_V04, LIVE_POPULATION, V02_NPCS, type Params, type Population } from "./params";
 
 const SEEDS = [42, 1, 2, 3, 4, 5, 6, 7];
 const WEEKS = Number(process.argv[2] ?? 4);
@@ -34,7 +34,8 @@ export const ROWS: { name: string; council: boolean; params: Partial<Params>; po
   // what was actually deployed: 2 NPCs taking one action per 20 s step ≈ a trade every ~4 ticks
   { name: "v0.2 as it ran live (2 NPCs acting every ~4 ticks)", council: true, params: {}, pop: { ...V02_NPCS, aiActEveryTicks: 4 }, liveOnly: true },
   { name: "v0.3 NPCs, no Council", council: false, params: {}, pop: {} },
-  { name: "v0.3 NPCs + Council (DEFAULT)", council: true, params: {}, pop: {} },
+  { name: "v0.3 NPCs + Council (DEFAULT, deployed)", council: true, params: {}, pop: {} },
+  { name: "v0.3 NPCs + Council v0.4 tuning (proposed)", council: true, params: COUNCIL_V04, pop: {} },
 ];
 
 export function sweep(popName: string, extra: Partial<Population>) {

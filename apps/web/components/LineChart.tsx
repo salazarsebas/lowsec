@@ -35,7 +35,7 @@ export function LineChart({
 }) {
   // Wide viewBox so --fs-micro / 9–10px axis type stays close to the token scale when the
   // SVG is stretched to the panel (a 640-wide box was enlarging labels ~2.5× at 1920).
-  const W = 1200, H = Math.max(height, 200), padL = 52, padR = series.some((s) => s.axis === "right") ? 58 : 16, padT = 18, padB = 22;
+  const W = 1200, H = Math.max(height, 200), padL = 52, padR = series.some((s) => s.axis === "right") ? 58 : 16, padT = markers.length ? 36 : 18, padB = 22;
   const left = series.filter((s) => s.axis !== "right");
   const right = series.filter((s) => s.axis === "right");
   const allXs = series.flatMap((s) => {
@@ -64,13 +64,7 @@ export function LineChart({
   const x = (v: number) => padL + ((v - xMin) * (W - padL - padR)) / Math.max(xMax - xMin, 1e-9);
   const yL = (v: number) => padT + ((lHi - v) * (H - padT - padB)) / (lHi - lLo);
   const yR = (v: number) => padT + ((rHi - v) * (H - padT - padB)) / (rHi - rLo);
-  const lTicks = (() => {
-    // 0 and the domain ends; skip the 1% band edge when it would sit on top of 0%.
-    const raw = [lLo, 0, lHi];
-    const uniq: number[] = [];
-    for (const v of raw) if (!uniq.some((u) => Math.abs(u - v) < (lHi - lLo) * 0.08)) uniq.push(v);
-    return uniq.sort((a, b) => a - b);
-  })();
+  const lTicks = niceTicks(lLo, lHi);
   const rTicks = [rLo, rLo + (rHi - rLo) / 2, rHi];
   const xTicks = (() => {
     const span = xMax - xMin;
@@ -91,7 +85,10 @@ export function LineChart({
   const inBand = (v: number) => !!band && v >= band[0] && v <= band[1];
   const barFill = (v: number) => (inBand(v) ? "var(--profit)" : "var(--loss)");
 
-  const visibleMarkers = markers.filter((m) => m.x >= xMin && m.x <= xMax);
+  // keep marker labels from colliding: when two are closer than ~260 px, keep the later one
+  const visibleMarkers = markers
+    .filter((m) => m.x >= xMin && m.x <= xMax)
+    .filter((m, i, arr) => !arr.slice(i + 1).some((n) => Math.abs(x(n.x) - x(m.x)) < 260));
 
   return (
     <div className="econ-chart-wrap">
@@ -132,7 +129,6 @@ export function LineChart({
             <rect x={padL} width={W - padL - padR} y={yL(band[1])} height={Math.max(yL(band[0]) - yL(band[1]), 1)} className="band" />
             <line x1={padL} x2={W - padR} y1={yL(band[0])} y2={yL(band[0])} className="band-edge" />
             <line x1={padL} x2={W - padR} y1={yL(band[1])} y2={yL(band[1])} className="band-edge" />
-            <text x={padL + 6} y={yL(band[1]) - 4} className="band-label">0–{band[1]}% target</text>
           </g>
         )}
         {right.map((s) => {
@@ -157,6 +153,14 @@ export function LineChart({
             const xs = s.xs ?? s.values.map((_, i) => i);
             const spans = s.spans ?? xs.map(() => 1);
             const y0 = yL(0);
+            // label at most one overflow per ~70 px so neighbouring clipped bars never overlap; the cap marks the rest
+            let lastLabelX = -1e9;
+            const showOverflow = (i: number) => {
+              const xi = x(xs[i]!);
+              if (xi - lastLabelX < 70) return false;
+              lastLabelX = xi;
+              return true;
+            };
             return (
               <g key={s.name}>
                 {s.values.map((v, i) => {
@@ -171,9 +175,14 @@ export function LineChart({
                     <g key={i}>
                       <rect x={x0 + gap / 2} y={top} width={w} height={h} fill={barFill(v)} opacity={inBand(v) ? 0.85 : 0.9} />
                       {clip && (v > clip[1] || v < clip[0]) && (
-                        <text x={x0 + w / 2} y={yv + (v > clip[1] ? -3 : 10)} textAnchor="middle" className="axis clipped" fill="var(--loss)">
-                          {v > clip[1] ? "▲" : "▼"}{yFmt(v)}
-                        </text>
+                        <>
+                          <rect x={x0 + gap / 2} y={v > clip[1] ? top : top + h - 3} width={w} height={3} fill="var(--ink)" opacity={0.9} className="overflow-cap" />
+                          {showOverflow(i) && (
+                            <text x={x0 + w / 2} y={v > clip[1] ? yv + 12 : yv - 6} textAnchor="middle" className="axis clipped" fill="var(--ink)">
+                              {v > clip[1] ? "▲" : "▼"}{yFmt(v)}
+                            </text>
+                          )}
+                        </>
                       )}
                     </g>
                   );
@@ -202,11 +211,11 @@ export function LineChart({
         {visibleMarkers.map((m, i) => {
           const mx = x(m.x);
           const nearRight = mx > W - 200;
-          const labelY = padT - 5 + (i % 2) * 10;
+          const labelY = 12 + (i % 2) * 15;
           return (
             <g key={`${m.x}-${m.label}`} className="econ-marker">
-              <line x1={mx} x2={mx} y1={padT + (i % 2) * 8} y2={H - padB} className="marker-line" />
-              <circle cx={mx} cy={padT + (i % 2) * 8} r={2.5} className="marker-dot" />
+              <line x1={mx} x2={mx} y1={padT + (i % 2) * 15} y2={H - padB} className="marker-line" />
+              <circle cx={mx} cy={padT + (i % 2) * 15} r={2.5} className="marker-dot" />
               <text x={mx + (nearRight ? -6 : 6)} y={labelY} textAnchor={nearRight ? "end" : "start"} className="marker-label">{m.label}</text>
             </g>
           );
@@ -227,8 +236,29 @@ export function councilMarkers(council: { ok?: boolean; hold?: string | null; ep
   const pick = (arr: typeof ev) => [...arr].sort((a, b) => mag(b) - mag(a))[0];
   const picked = thirds.map(pick).filter((c): c is (typeof ev)[number] => !!c);
   const tag = (c: (typeof ev)[number]) => {
-    const a = (c.prevFaucetBps / 100).toFixed(0), b = (c.nextFaucetBps / 100).toFixed(0);
+    const d = Math.round(c.prevFaucetBps / 100) === Math.round(c.nextFaucetBps / 100) ? 1 : 0;
+    const a = (c.prevFaucetBps / 100).toFixed(d), b = (c.nextFaucetBps / 100).toFixed(d);
     return c.nextFaucetBps > c.prevFaucetBps ? `Raise ${a}→${b}%` : `Cut ${a}→${b}%`;
   };
   return picked.sort((a, b) => a.epoch - b.epoch).map((c) => ({ x: c.epoch, label: tag(c) }));
+}
+
+/** Round-number y ticks (≤ 5) inside [lo, hi], always including 0 when it is in range. */
+export function niceTicks(lo: number, hi: number): number[] {
+  const span = hi - lo;
+  if (!(span > 0)) return [lo];
+  const raw = span / 4;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((st) => span / st <= 4.5) ?? 10 * mag;
+  const out: number[] = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(Math.abs(v) < 1e-9 ? 0 : +v.toFixed(6));
+  return out;
+}
+
+/** Trailing rolling mean (window n) of a series; the first points average what exists so far. */
+export function rollingMean(values: number[], n: number): number[] {
+  return values.map((_, i) => {
+    const w = values.slice(Math.max(0, i - n + 1), i + 1);
+    return w.reduce((a, b) => a + b, 0) / w.length;
+  });
 }

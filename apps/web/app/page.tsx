@@ -61,7 +61,8 @@ export default function Home() {
       {s && play && (
         <>
           <div className="stage map-holder">
-            <GameMap s={s} now={g.now} blasts={g.blasts} shake={g.shake} fullBleed insets={insets} burnCounter={session ? "top-left" : "bottom-right"} legend={!session || !joined ? false : true} />
+            <GameMap s={s} now={g.now} blasts={g.blasts} shake={g.shake} fullBleed insets={insets} burnCounter={session ? "top-left" : "bottom-right"} legend={!session || !joined ? false : true}
+              replay={(() => { const f = g.lastAmbush(); return f ? { label: `${f.actor} · ${new Date(f.ts).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`, onReplay: g.replayLastAmbush } : null; })()} />
           </div>
           {g.banner && <AmbushOverlay a={g.banner} onDismiss={g.dismissBanner} />}
           {g.payoff && <PayoffReceipt p={g.payoff} />}
@@ -71,7 +72,7 @@ export default function Home() {
           ) : s.me?.player ? (
             <div className={step !== null && step < 3 ? "dock onboarding-on" : "dock"}>
               <Onboarding s={s} />
-              <Actions s={s} session={session} onResult={g.onResult} step={step} now={g.now} docking={g.docking} recordBuy={g.recordBuy} clearCost={g.clearCost} unitCost={g.unitCost} />
+              <Actions s={s} session={session} onResult={g.onResult} runTx={g.runTx} pending={g.pending} step={step} now={g.now} docking={g.docking} recordBuy={g.recordBuy} clearCost={g.clearCost} unitCost={g.unitCost} />
             </div>
           ) : (
             <div className="dock"><div className="panel registering">Registering… <button onClick={() => act(session, "register", { town: "mina" }).then(() => g.refresh())}>retry</button></div></div>

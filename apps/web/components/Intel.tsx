@@ -1,4 +1,5 @@
 "use client";
+import { feedText } from "@/lib/errors";
 import { useEffect, useState } from "react";
 import type { FeedItem, Player, State } from "@/lib/types";
 import { GOODS, NPC_COLORS, TOWN_LABEL, TOWNS } from "@/lib/types";
@@ -101,7 +102,7 @@ export function Feed({ items, explorer }: { items: FeedItem[]; explorer: string 
             >
               <Icon name={icon} size={11} />
               <span className="muted small">{new Date(f.ts).toLocaleTimeString()}</span>
-              <span className="feed-text">{f.text}</span>
+              <span className="feed-text">{feedText(f)}</span>
               {f.txHash && (
                 <a href={`${explorer}/txns/${f.txHash}`} target="_blank" rel="noreferrer">↗</a>
               )}
