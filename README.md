@@ -124,6 +124,8 @@ Mean abs error is the mean |epoch inflation − 1%| from epoch 2 on (epoch 1 is 
 ## Testnet accounts and transactions
 See [docs/DEPLOYMENTS.md](docs/DEPLOYMENTS.md) for every deploy and an example tx for each feature. Accounts: `lowsec.testnet` (contract), `lowsec-council.testnet`, `lowsec-relayer.testnet`, `hauler-1..4.lowsec.testnet` (Kestrel, Vex, Moss, Ryo), `guild.lowsec.testnet` (the Guild), `lowsec-agent-demo.testnet` (external agent).
 
+UI design system (palette, type, components, sound, credits): [docs/DESIGN.md](docs/DESIGN.md).
+
 ## Repo and tests
 ```
 packages/sim       deterministic economy sim, CLI, sweep            pnpm test → 17 tests
